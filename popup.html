@@ -64,6 +64,10 @@
       color: #444;
       font-size: 18px;
     }
+    .dropdown {
+      color: #444;
+      font-size: 18px;
+    }
     .flex-container {
       display: flex; /*отображает контейнер в виде блочного элемента*/
       justify-content: space-between; /*равномерное выравнивание элементов*/
@@ -148,9 +152,44 @@
     .checkbox {
       margin-bottom: 0.5em;
     }
+
+    .right {
+      clear:left;
+      text-align: right;
+    }
+
+    .dropbtn {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f1f1f1;
+        font-size: 14px;
+        min-width: 160px;
+        overflow: auto;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+    .dropdown-content a {
+        padding: 5px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    .dropdown a:hover {background-color: #ddd;}
+
+    .show {display: block;}
   </style>
   <!--конец объяснения блока со стилями-->
-  <script src="popup.js"></script>
 </head>
 <!--объяснение тега <body>-->
 <body>
@@ -158,7 +197,15 @@
   <div class="modal-header">
     <h1 class="logo">
       <img class="logo-icon" src="logo.png">XDL
-      <span class="version">(0.1)</span>
+      <span class="version">v0.1</span>
+      <span class="dropdown right">
+        <span id="menu" class="dropbtn">Menu</span>
+        <div id="myDropdown" class="dropdown-content">
+          <a href="#">Сайт 🌍</a>
+          <a href="#">Поддержка 💸</a>
+          <a href="#">Режим отладки 🐞</a>
+        </div>
+      </span>
     </h1>
   </div>
   <!--Конец контейнера-->
@@ -166,33 +213,31 @@
   <div class="modal-content">
     <div class="checkbox" style="margin-top: 0.5em;">
         <input class="custom-checkbox" type="checkbox" id="cb1" name="cb1" value="indigo">
-        <label for="cb1">Продлевать сессию, когда я в онлайне</label>
+        <label for="cb1">Вечный онлайн</label>
     </div>
     <div class="checkbox">
         <input class="custom-checkbox" type="checkbox" id="cb2" name="cb2" value="indigo">
-        <label for="cb2">Автоматически отмечать посещаемость, когда я в онлайне</label>
+        <label for="cb2">Автопосещаемость</label>
     </div>
     <div class="checkbox">
         <input class="custom-checkbox" type="checkbox" id="cb3" name="cb3" value="indigo">
-        <label for="cb3">Отправлять уведомление на почту о посещённом занятии</label>
-    </div>
-    <div class="checkbox" style="margin-top: 1em;">
-        <input class="custom-checkbox" type="checkbox" id="cb4" name="cb4" value="indigo">
-        <label for="cb4">Продлевать сессию в оффлайне</label>
+        <label for="cb3">Уведомлять о посещении</label>
     </div>
     <div class="checkbox">
         <input class="custom-checkbox" type="checkbox" id="cb5" name="cb5" value="indigo">
-        <label for="cb5">Автоматически отмечать посещаемость в оффлайне</label>
+        <label for="cb5">Автопосещаемость 24/7</label>
     </div>
-    <p id="res"></p>
   </div>
   <!--Конец контейнера-->
   <!--контейнер, содержащий контейнеры с иконками-->
   <div class="modal-icons">
     <div class="flex-container">
       Made with ❤️ by NightStranger
+      <div class="right" id="res">
+      </div>
     </div>
   </div>
+  <script type="text/javascript" src="jquery-3.0.0.js"></script>
   <script type="text/javascript" src="popup.js"></script>
 </body>
 

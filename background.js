@@ -5,7 +5,7 @@ chrome.runtime.onMessage.addListener(
                 localStorage[key] = request.settings[key];
             }
 
-            sendResponse({farewell: "Saved"});
+            sendResponse({farewell: "Сохранено"});
         }
 
         if (request.greeting == "getSettings"){

@@ -1,5 +1,3 @@
-{
-
 let area = document.getElementsByClassName("modal-content")[0];
 let checkboxes = document.getElementsByClassName("custom-checkbox");
 let settings = new Object;
@@ -31,7 +29,11 @@ function saveSettings(){
     chrome.runtime.sendMessage({greeting: "saveSettings", settings: settings},
         function (response) {
             if(document.getElementById("res")){
+                $("#res").fadeIn(1);
                 document.getElementById("res").innerHTML = response.farewell;
+                setTimeout(() => {
+                    $("#res").fadeOut(800);
+                }, 500);
             }
         }
     );
@@ -45,5 +47,23 @@ function getArrString(arr){
     return str;
 }
 
+document.getElementById("menu").addEventListener("click", () => {
+    document.getElementById("myDropdown").classList.toggle("show");
+    console.log("dropdown");
+});
 
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+        console.log("dropdown close");
+      }
+    }
+  }
 }

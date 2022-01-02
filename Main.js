@@ -1,16 +1,17 @@
-var loc = document.location.pathname;
-let debug = 1;
+const loc = document.location.pathname;
+const debug = 1;
 
 console.log(">XDL: Main.js loading...");
 
-let apiLink = "https://dl.nure.ua/mod/attendance/";
+const moodleApi = "https://dl.nure.ua/mod/attendance/";
+const XDLApi = "https://leoitdev.ru/api/XDL/";
 
 updateAttendanceList()
 setInterval(updateAttendanceList, 5 * 60 * 1000); // обновление каждые 5 минут
 
 function updateAttendanceList(){
 	$.ajax({
-		url: apiLink + 'view.php',
+		url:`${moodleApi}view.php`,
 		//url: `https://leoitdev.ru/api/XDL/test.php`,
 		method: 'get',
 		dataType: 'html',
@@ -40,7 +41,7 @@ function updateAttendanceList(){
 }
 
 function setAttendance(link){
-	let fullLink = apiLink + link;
+	let fullLink = moodleApi + link;
 	$.ajax({
 		url: fullLink,
 		method: 'get',
@@ -55,7 +56,7 @@ function setAttendance(link){
 
 function sendAttendanceMail(mail){
 	$.ajax({
-		url: 'https://leoitdev.ru/api/XDL/mail/',
+		url: `${XDLApi}mail/`,
 		method: 'post',
 		dataType: 'html',
 		data: {
@@ -83,7 +84,7 @@ function getAllIndexes(arr, val) {
 // 2 - attendance set
 function sendStat(event, parameter){
 	$.ajax({
-		url: 'https://leoitdev.ru/api/XDL/stat/',
+		url: `${XDLApi}stat/`,
 		method: 'post',
 		dataType: 'html',
 		data: {
