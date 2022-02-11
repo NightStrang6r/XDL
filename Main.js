@@ -9,7 +9,7 @@ const XDLApi = "https://leoitdev.ru/api/XDL/";
 updateAttendanceList()
 setInterval(updateAttendanceList, 5 * 60 * 1000); // обновление каждые 5 минут
 
-function updateAttendanceList(){
+function updateAttendanceList() {
 	$.ajax({
 		url:`${moodleApi}view.php`,
 		//url: `https://leoitdev.ru/api/XDL/test.php`,
@@ -20,12 +20,12 @@ function updateAttendanceList(){
 			mode: 2,
 			view: 5
 		},
-		success: function(data){
+		success: data => {
 			let word = "attendance.php?";
 			let all = getAllIndexes(data, word);
 			let link = "";
 			if(all[0]){
-				all.forEach(function callback(currentValue) {
+				all.forEach(currentValue => {
 					for(let i = currentValue; data[i] != `"`; i++){
 						link += data[i];
 					}
@@ -40,21 +40,55 @@ function updateAttendanceList(){
 	});
 }
 
-function setAttendance(link){
+function setAttendance(link) {
 	let fullLink = moodleApi + link;
+
 	$.ajax({
 		url: fullLink,
 		method: 'get',
 		dataType: 'html',
-		success: function(data){
-			console.log(">XDL: Посещение отмечено.");
-			sendStat(2, link);
-			sendAttendanceMail("");
+		success: data => {
+            if(data.includes(`Сохранить`)) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'text/html');
+
+                let vars = doc.getElementsByClassName("statusdesc");
+                let sessid, sesskey, status;
+
+                for(let i = 0; i < vars.length; i++){
+                    if(vars[i].innerHTML == "Присутствовал" || vars[i].innerHTML == "Присутній"){
+                        status = vars[i].parentElement.firstElementChild.value
+                    }
+                }
+
+                if(status) {
+                    sessid = getQueryVariable(link, "sessid");
+                    sesskey = getQueryVariable(link, "sesskey");
+
+                    $.ajax({
+                        url: fullLink,
+                        method: 'post',
+                        data: {
+                            sessid: sessid,
+                            sesskey: sesskey,
+                            _qf_mod_attendance_form_studentattendance: 1,
+                            mform_isexpanded_id_session: 1,
+                            status: status,
+                            submitbutton: 'Сохранить'
+                        },
+                        success: data => {
+                            console.log(">XDL: Посещение отмечено. (adv)");
+                        }
+                    });
+                }
+            } else {
+                console.log(">XDL: Посещение отмечено.");
+            }
 		}
 	});
 }
 
-function sendAttendanceMail(mail){
+function sendAttendanceMail(mail) {
 	$.ajax({
 		url: `${XDLApi}mail/`,
 		method: 'post',
@@ -65,7 +99,7 @@ function sendAttendanceMail(mail){
 			message: "Было отмечено посещение на DL Nure. \n\nЕсли вы не хотите получать рассылку, отключите её в настройках расширения.",
 			submit: ""
 		},
-		success: function(data){
+		success: data => {
 			sendStat(1, mail);
 			console.log(`>XDL: Письмо о посещении отправлено на почту ${mail}.`);
 		}
@@ -80,10 +114,22 @@ function getAllIndexes(arr, val) {
     return indexes;
 }
 
+function getQueryVariable(link, variable) {
+    let query = link.replace("?", "&").substring(1);
+    let vars = query.split('&');
+    for (let i = 0; i < vars.length; i++) {
+        let pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+            return decodeURIComponent(pair[1]);
+        }
+    }
+    return null;
+}
+
 // 1 - mail send
 // 2 - attendance set
-function sendStat(event, parameter){
-	$.ajax({
+function sendStat(event, parameter) {
+	/*$.ajax({
 		url: `${XDLApi}stat/`,
 		method: 'post',
 		dataType: 'html',
@@ -95,7 +141,7 @@ function sendStat(event, parameter){
 		success: function(data){
 
 		}
-	})
+	})*/
 }
 
 chrome.runtime.sendMessage({greeting: "getSettings"},
