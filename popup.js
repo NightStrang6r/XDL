@@ -1,9 +1,14 @@
 let area = document.getElementsByClassName("modal-content")[0];
 let checkboxes = document.getElementsByClassName("custom-checkbox");
+let emailButton = document.getElementById("email_button");
 let settings = new Object;
+
 if(area && checkboxes){
     restoreSettings();
-    area.addEventListener("click", saveSettings);
+    for(let i = 0; i < checkboxes.length; i++){
+        checkboxes[i].addEventListener("input", saveSettings);
+    }
+    emailButton.addEventListener("click", updateEmailInput);
 }
 
 function restoreSettings(){
@@ -47,12 +52,22 @@ function getArrString(arr){
     return str;
 }
 
+function updateEmailInput() {
+    let emailInput = $(".text-field")[0];
+    emailButton.classList.toggle('arrow-top');
+    emailButton.classList.toggle('arrow-bottom');
+    if(emailInput.style.display == "none") {
+        emailInput.style.display = "block";
+    } else {
+        emailInput.style.display = "none";
+    }
+}
+
 document.getElementById("menu").addEventListener("click", () => {
     document.getElementById("myDropdown").classList.toggle("show");
     console.log("dropdown");
 });
 
-// Close the dropdown if the user clicks outside of it
 window.onclick = function(event) {
     if (!event.target.matches('.dropbtn')) {
 

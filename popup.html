@@ -2,15 +2,15 @@
 <html>
 <!--Начало первого блока объяснения кода-->
 <head>
-  <meta charset="utf-8">
-  <title>XDL</title>
-  <!--ссылаемся на шрифты, используемые в документе-->
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
-  <!--здесь мы ссылаемся на стили, которые будем использовать в документе, а именно стиль иконок-->
-  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
-    crossorigin="anonymous">
+    <meta charset="utf-8">
+    <title>XDL</title>
+    <!--ссылаемся на шрифты, используемые в документе-->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" type="text/css">
+    <!--здесь мы ссылаемся на стили, которые будем использовать в документе, а именно стиль иконок-->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN"
+        crossorigin="anonymous">
     <!--начало блока со стилями для страницы-->
-  <style>
+    <style>
     /* Модальная структура документа */
     /*общие настройки для всего документа*/
     html,
@@ -188,57 +188,183 @@
     .dropdown a:hover {background-color: #ddd;}
 
     .show {display: block;}
-  </style>
-  <!--конец объяснения блока со стилями-->
+
+    .paragraph {
+        font-weight: bold;
+    }
+
+    /* Text Input */
+    .text-field {
+      margin-bottom: 1rem;
+    }
+
+    .text-field__label {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .text-field__input {
+      display: block;
+      width: 300px;
+      height: 40px;
+      padding-left: 0.375rem 0.75rem;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #212529;
+      background-color: #fff;
+      background-clip: padding-box;
+      border: 1px solid #bdbdbd;
+      border-radius: 0.25rem;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    .text-field__input[type="search"]::-webkit-search-decoration,
+    .text-field__input[type="search"]::-webkit-search-cancel-button,
+    .text-field__input[type="search"]::-webkit-search-results-button,
+    .text-field__input[type="search"]::-webkit-search-results-decoration {
+      -webkit-appearance: none;
+    }
+
+    .text-field__input::placeholder {
+      color: #212529;
+      opacity: 0.4;
+    }
+
+    .text-field__input:focus {
+      color: #212529;
+      background-color: #fff;
+      border-color: #bdbdbd;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(158, 158, 158, 0.25);
+    }
+
+    .text-field__input:disabled,
+    .text-field__input[readonly] {
+      background-color: #f5f5f5;
+      opacity: 1;
+    }
+
+    .text-field_floating-2 {
+      position: relative;
+    }
+
+    .text-field_floating-2 .text-field__input {
+      height: calc(2.5rem + 2px);
+      padding-left: 0.5rem;
+    }
+
+    .text-field_floating-2 .text-field__label {
+      position: absolute;
+      top: 50%;
+      left: 0.3125rem;
+      display: flex;
+      transform: translateY(-50%);
+      pointer-events: none;
+      border: none;
+      background-color: #fff;
+      color: #757575;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      transition: top 0.1s ease-in-out, scale 0.1s ease-in-out;
+    }
+
+    .text-field_floating-2 .text-field__input::-moz-placeholder {
+      color: transparent;
+    }
+
+    .text-field_floating-2 .text-field__input::placeholder {
+      color: transparent;
+    }
+
+    .text-field_floating-2 .text-field__input:focus~.text-field__label,
+    .text-field_floating-2 .text-field__input:not(:placeholder-shown)~.text-field__label {
+        top: 0;
+        transform: translateY(-50%) scale(0.75);
+    }
+
+    /* Arrow */
+    .arrow {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-top: 2px solid #1866c0;
+        border-right: 2px solid #1866c0;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    .arrow-top {
+        margin-top: 5px;
+        transform: rotate(-45deg);
+    }
+
+    .arrow-bottom {
+        margin-bottom: 5px;
+        transform: rotate(135deg); 
+    }
+    </style>
+    <!--конец объяснения блока со стилями-->
 </head>
 <!--объяснение тега <body>-->
 <body>
-  <!--контейнер, содержащий название, логотип и номер версии-->
-  <div class="modal-header">
-    <h1 class="logo">
-      <img class="logo-icon" src="logo.png">XDL
-      <span class="version">v0.1</span>
-      <span class="dropdown right">
-        <span id="menu" class="dropbtn">Menu</span>
-        <div id="myDropdown" class="dropdown-content">
-          <a href="#">Сайт 🌍</a>
-          <a href="#">Поддержка 💸</a>
-          <a href="#">Режим отладки 🐞</a>
+    <!--контейнер, содержащий название, логотип и номер версии-->
+    <div class="modal-header">
+        <h1 class="logo">
+        <img class="logo-icon" src="logo.png">XDL
+        <span class="version">v0.1</span>
+        <span class="dropdown right">
+            <span id="menu" class="dropbtn">Menu</span>
+            <div id="myDropdown" class="dropdown-content">
+            <a href="#">Сайт 🌍</a>
+            <a href="#">Поддержка 💸</a>
+            <a href="#">Режим отладки 🐞</a>
+            </div>
+        </span>
+        </h1>
+    </div>
+    <!--Конец контейнера-->
+    <!--контейнер, содержащий настройки-->
+    <div class="modal-content">
+        <p class="paragraph">Основные функции</p>
+        <div class="checkbox" style="margin-top: 0.5em;">
+            <input class="custom-checkbox" type="checkbox" id="cb1" name="cb1" value="indigo">
+            <label for="cb1">Вечный онлайн</label>
         </div>
-      </span>
-    </h1>
-  </div>
-  <!--Конец контейнера-->
-  <!--контейнер, содержащий описание функций расширения-->
-  <div class="modal-content">
-    <div class="checkbox" style="margin-top: 0.5em;">
-        <input class="custom-checkbox" type="checkbox" id="cb1" name="cb1" value="indigo">
-        <label for="cb1">Вечный онлайн</label>
+        <div class="checkbox">
+            <input class="custom-checkbox" type="checkbox" id="cb2" name="cb2" value="indigo">
+            <label for="cb2">Автопосещаемость</label>
+        </div>
+        <p class="paragraph">Онлайн функции</p>
+        <div class="checkbox">
+            <input class="custom-checkbox" type="checkbox" id="cb3" name="cb3" value="indigo">
+            <label for="cb3">Уведомлять о посещении</label>
+            <div class="arrow arrow-bottom" id="email_button"></div>
+        </div>
+        <div class="text-field text-field_floating-2" style="display: none;">
+            <input class="text-field__input" type="email" id="email" name="email" placeholder="">
+            <label class="text-field__label" for="email">Email</label>
+        </div>
+        <div class="checkbox">
+            <input class="custom-checkbox" type="checkbox" id="cb5" name="cb5" value="indigo">
+            <label for="cb5">Автопосещаемость 24/7</label>
+        </div>
     </div>
-    <div class="checkbox">
-        <input class="custom-checkbox" type="checkbox" id="cb2" name="cb2" value="indigo">
-        <label for="cb2">Автопосещаемость</label>
+    <!--Конец контейнера-->
+    <!--контейнер, содержащий контейнеры с иконками-->
+    <div class="modal-icons">
+        <div class="flex-container">
+        Made with ❤️ by NightStranger
+        <div class="right" id="res">
+        </div>
+        </div>
     </div>
-    <div class="checkbox">
-        <input class="custom-checkbox" type="checkbox" id="cb3" name="cb3" value="indigo">
-        <label for="cb3">Уведомлять о посещении</label>
-    </div>
-    <div class="checkbox">
-        <input class="custom-checkbox" type="checkbox" id="cb5" name="cb5" value="indigo">
-        <label for="cb5">Автопосещаемость 24/7</label>
-    </div>
-  </div>
-  <!--Конец контейнера-->
-  <!--контейнер, содержащий контейнеры с иконками-->
-  <div class="modal-icons">
-    <div class="flex-container">
-      Made with ❤️ by NightStranger
-      <div class="right" id="res">
-      </div>
-    </div>
-  </div>
-  <script type="text/javascript" src="jquery-3.0.0.js"></script>
-  <script type="text/javascript" src="popup.js"></script>
+    <script type="text/javascript" src="jquery-3.0.0.js"></script>
+    <script type="text/javascript" src="popup.js"></script>
 </body>
 
 </html>
