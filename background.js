@@ -1,15 +1,25 @@
-chrome.runtime.onMessage.addListener(
-	function(request, sender, sendResponse) {
-	    if (request.greeting == "saveSettings"){
-            for (let key in request.settings) {
-                localStorage[key] = request.settings[key];
-            }
+chrome.runtime.onMessage.addListener(onMessage);
 
-            sendResponse({farewell: "Сохранено"});
+function onMessage(request, sender, sendResponse) {
+    if (request.greeting == "saveSettings"){
+        for (let key in request.settings) {
+            localStorage[key] = request.settings[key];
         }
 
-        if (request.greeting == "getSettings"){
-            sendResponse({farewell: "Bye", settings: localStorage});
-        }
-	}
-);
+        sendResponse({farewell: "Сохранено"});
+    }
+
+    if (request.greeting == "getSettings"){
+        sendResponse({settings: localStorage});
+    }
+
+    if (request.greeting == "saveEmail"){
+        localStorage["email"] = request.email;
+
+        sendResponse({farewell: "OK"});
+    }
+
+    if (request.greeting == "getEmail"){
+        sendResponse({email: localStorage["email"]});
+    }
+}

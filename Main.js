@@ -1,17 +1,83 @@
 const loc = document.location.pathname;
-const debug = 1;
+const debug = true;
 
-console.log(">XDL: Main.js loading...");
-
-const moodleApi = "https://dl.nure.ua/mod/attendance/";
+const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://leoitdev.ru/api/XDL/";
 
-updateAttendanceList()
-setInterval(updateAttendanceList, 5 * 60 * 1000); // обновление каждые 5 минут
+log(">XDL: Main.js loading...");
+
+const sesskey = obtainSesskey();
+let settings;
+
+Main();
+
+async function Main() {
+    settings = await getSettings();
+    if(debug) {
+
+    }
+    log(`>XDL: Settings loaded:`);
+    log(settings)
+
+    setInterval(extendLoginTimeout, 5 * 60 * 1000);
+    
+    updateAttendanceList()
+    setInterval(updateAttendanceList, 5 * 60 * 1000); // обновление каждые 5 минут
+}
+
+/* FUNCTIONS */
+
+function log(msg, err = false) {
+    if(debug) {
+        if(!err) {
+            console.log(msg);
+        } else {
+            console.error(msg);
+        }
+    }
+}
+
+function getSettings() {
+    let settings = new Promise (resolve => {
+        chrome.runtime.sendMessage({greeting: "getSettings"}, 
+        resp => resolve(resp));
+    });
+    
+    return settings;
+}
+
+function obtainSesskey() {
+    let sesskey = 0;
+    try {
+        let logoutLink = document.getElementsByClassName("logininfo")[0].lastElementChild.href;
+        sesskey = logoutLink.split('=')[1];
+        log(`>XDL: Successfully obtained session key: ${sesskey}`);
+    } catch(err) {
+        log(`>XDL: Failed to obtain sesskey. Error: ${err}`, true);
+    }
+    return sesskey;
+}
+
+function extendLoginTimeout() {
+    if(!sesskey) return;
+    $.ajax({
+		url:`${moodleApi}lib/ajax/service.php?sesskey=${sesskey}&info=core_session_touch`,
+		method: 'post',
+		dataType: 'json',
+		data: '[{"index":0,"methodname":"core_session_touch","args":{}}]',
+        contentType: "application/json",
+		success: data => {
+            log(`>XDL: Login timeout updated`);
+		},
+        error: err => {
+            log(`>XDL: Failed to update login timeout`, true);
+        }
+	});
+}
 
 function updateAttendanceList() {
 	$.ajax({
-		url:`${moodleApi}view.php`,
+		url:`${moodleApi}mod/attendance/view.php`,
 		//url: `https://leoitdev.ru/api/XDL/test.php`,
 		method: 'get',
 		dataType: 'html',
@@ -29,19 +95,19 @@ function updateAttendanceList() {
 					for(let i = currentValue; data[i] != `"`; i++){
 						link += data[i];
 					}
-					console.log(link);
+					log(link);
 					setAttendance(link);
 					link = "";
 				});
 			}else{
-				console.log(">XDL: Нет доступных полей для отметки посещения.");
+				log(">XDL: Нет доступных полей для отметки посещения.");
 			}
 		}
 	});
 }
 
 function setAttendance(link) {
-	let fullLink = moodleApi + link;
+	let fullLink = `${moodleApi}mod/attendance/${link}`;
 
 	$.ajax({
 		url: fullLink,
@@ -77,12 +143,12 @@ function setAttendance(link) {
                             submitbutton: 'Сохранить'
                         },
                         success: data => {
-                            console.log(">XDL: Посещение отмечено. (adv)");
+                            log(">XDL: Посещение отмечено. (adv)");
                         }
                     });
                 }
             } else {
-                console.log(">XDL: Посещение отмечено.");
+                log(">XDL: Посещение отмечено.");
             }
 		}
 	});
@@ -101,7 +167,7 @@ function sendAttendanceMail(mail) {
 		},
 		success: data => {
 			sendStat(1, mail);
-			console.log(`>XDL: Письмо о посещении отправлено на почту ${mail}.`);
+			log(`>XDL: Письмо о посещении отправлено на почту ${mail}.`);
 		}
 	});
 }
@@ -144,10 +210,6 @@ function sendStat(event, parameter) {
 	})*/
 }
 
-chrome.runtime.sendMessage({greeting: "getSettings"},
-    function (response) {
-        console.log(response);
-    }
-);
+/* FUNCTIONS */
 
-console.log(">XDL: Main.js loaded.");
+log(">XDL: Main.js loaded.");

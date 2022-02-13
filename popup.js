@@ -1,14 +1,17 @@
 let area = document.getElementsByClassName("modal-content")[0];
 let checkboxes = document.getElementsByClassName("custom-checkbox");
 let emailButton = document.getElementById("email_button");
+let emaitInput = document.getElementById("email_input");
 let settings = new Object;
 
 if(area && checkboxes){
     restoreSettings();
+    putSavedEmail();
     for(let i = 0; i < checkboxes.length; i++){
         checkboxes[i].addEventListener("input", saveSettings);
     }
     emailButton.addEventListener("click", updateEmailInput);
+    emaitInput.addEventListener("input", saveEmailInput)
 }
 
 function restoreSettings(){
@@ -26,25 +29,37 @@ function restoreSettings(){
     );
 }
 
-function saveSettings(){
+function saveSettings() {
     for(let i = 0; i < checkboxes.length; i++){
         settings[checkboxes[i].name] = checkboxes[i].checked;
     }
+    settings["email"] = emaitInput.value;
 
-    chrome.runtime.sendMessage({greeting: "saveSettings", settings: settings},
-        function (response) {
-            if(document.getElementById("res")){
-                $("#res").fadeIn(1);
-                document.getElementById("res").innerHTML = response.farewell;
-                setTimeout(() => {
-                    $("#res").fadeOut(800);
-                }, 500);
-            }
-        }
-    );
+    chrome.runtime.sendMessage({greeting: "saveSettings", settings: settings}, msgUI);
+}
+ 
+function saveEmailInput() {
+    let input = emaitInput.value;
+    chrome.runtime.sendMessage({greeting: "saveEmail", email: input});
 }
 
-function getArrString(arr){
+function putSavedEmail() {
+    chrome.runtime.sendMessage({greeting: "getEmail"}, (resp) => {
+        emaitInput.value = resp.email;
+    });
+}
+
+function msgUI(response) {
+    if(document.getElementById("res")){
+        $("#res").fadeIn(1);
+        document.getElementById("res").innerHTML = response.farewell;
+        setTimeout(() => {
+            $("#res").fadeOut(800);
+        }, 500);
+    }
+}
+
+function getArrString(arr) {
     let str = "";
     for (var key in arr) {
         str += "Ключ: " + key + " значение: " + arr[key] + "\n";
