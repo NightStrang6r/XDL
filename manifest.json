@@ -10,7 +10,6 @@
             "default_popup": "popup.html"
         },
     "background": {
-        
         "scripts": [
             "jquery-3.0.0.js",
             "background.js"
