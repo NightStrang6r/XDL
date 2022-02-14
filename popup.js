@@ -29,11 +29,15 @@ function restoreSettings(){
     );
 }
 
-function saveSettings() {
+function saveSettings(el) {
     for(let i = 0; i < checkboxes.length; i++){
         settings[checkboxes[i].name] = checkboxes[i].checked;
     }
     settings["email"] = emaitInput.value;
+
+    if(el.srcElement.name == "visitNotify" && el.srcElement.checked == true) {
+        updateEmailInput();
+    }
 
     chrome.runtime.sendMessage({greeting: "saveSettings", settings: settings}, msgUI);
 }

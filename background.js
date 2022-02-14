@@ -1,3 +1,5 @@
+console.log(">XDL: background.js loaded.");
+
 chrome.runtime.onMessage.addListener(onMessage);
 
 function onMessage(request, sender, sendResponse) {

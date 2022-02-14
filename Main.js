@@ -4,6 +4,8 @@ const debug = true;
 const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://leoitdev.ru/api/XDL/";
 
+const autoAttendanceTimeout = 5 * 60 * 1000; // 5 минут
+
 log(">XDL: Main.js loading...");
 
 const sesskey = obtainSesskey();
@@ -13,16 +15,22 @@ Main();
 
 async function Main() {
     settings = await getSettings();
-    if(debug) {
 
-    }
     log(`>XDL: Settings loaded:`);
-    log(settings)
+    log(settings);
 
-    setInterval(extendLoginTimeout, 5 * 60 * 1000);
+    if(settings.extendOnline) {
+        log(`>XDL: ExtendOnline thread started.`);
+        setInterval(extendLoginTimeout, autoAttendanceTimeout);
+    }
     
-    updateAttendanceList()
-    setInterval(updateAttendanceList, 5 * 60 * 1000); // обновление каждые 5 минут
+    if(settings.autoAttendance) {
+        log(`>XDL: AutoAttendance thread started.`);
+        updateAttendanceList()
+        setInterval(updateAttendanceList, autoAttendanceTimeout);
+    }
+
+    log(">XDL: Main.js loaded.");
 }
 
 /* FUNCTIONS */
@@ -40,7 +48,7 @@ function log(msg, err = false) {
 function getSettings() {
     let settings = new Promise (resolve => {
         chrome.runtime.sendMessage({greeting: "getSettings"}, 
-        resp => resolve(resp));
+        resp => resolve(resp.settings));
     });
     
     return settings;
@@ -211,5 +219,3 @@ function sendStat(event, parameter) {
 }
 
 /* FUNCTIONS */
-
-log(">XDL: Main.js loaded.");
