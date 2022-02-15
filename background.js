@@ -5,7 +5,7 @@ const XDLApi = "https://leoitdev.ru/api/XDL/";
 
 const autoAttendanceTimeout = 5 * 60 * 1000; // 5 минут
 
-log(">XDL: background.js loading...");
+log(">XDL: Background.js loading...");
 
 let sesskey = obtainSesskey();
 
@@ -29,7 +29,7 @@ async function Main() {
         setInterval(updateAttendanceList, autoAttendanceTimeout);
     }
 
-    log(">XDL: Main.js loaded.");
+    log(">XDL: Background.js loaded.");
 }
 
 function log(msg, err = false) {
@@ -87,7 +87,7 @@ function extendLoginTimeout() {
             log(`>XDL: Login timeout updated`);
 		},
         error: err => {
-            log(`>XDL: Failed to update login timeout`, true);
+            log(`>XDL: Failed to update login timeout`);
         }
 	});
 }
@@ -160,18 +160,23 @@ function setAttendance(link) {
                             submitbutton: 'Сохранить'
                         },
                         success: data => {
+                            sendAttendanceMail(fullLink);
                             log(">XDL: Посещение отмечено. (adv)");
                         }
                     });
                 }
             } else {
+                sendAttendanceMail(fullLink);
                 log(">XDL: Посещение отмечено.");
             }
 		}
 	});
 }
 
-function sendAttendanceMail(mail) {
+function sendAttendanceMail(link) {
+    let mail = localStorage["email"];
+    if(!localStorage["visitNotify"] || !mail || mail === undefined)
+        return;
 	$.ajax({
 		url: `${XDLApi}mail/`,
 		method: 'post',
@@ -179,11 +184,10 @@ function sendAttendanceMail(mail) {
 		data: {
 			email: mail,
 			subject: "DXL: Посещение отмечено",
-			message: "Было отмечено посещение на DL Nure. \n\nЕсли вы не хотите получать рассылку, отключите её в настройках расширения.",
+			message: `Было отмечено посещение на DL Nure.\nСсылка: ${link}\n\nЕсли вы не хотите получать рассылку, отключите её в настройках расширения.`,
 			submit: ""
 		},
 		success: data => {
-			sendStat(1, mail);
 			log(`>XDL: Письмо о посещении отправлено на почту ${mail}.`);
 		}
 	});
