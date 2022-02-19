@@ -42,7 +42,7 @@ function obtainSesskey() {
         sesskey = logoutLink.split('=')[1];
         log(`>XDL: Successfully obtained session key: ${sesskey}`);
     } catch(err) {
-        log(`>XDL: Failed to obtain sesskey. Error: ${err}`, true);
+        log(`>XDL: Failed to obtain sesskey. Error: ${err}`);
     }
     return sesskey;
 }

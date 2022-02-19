@@ -36,49 +36,85 @@
         outline: 0;
         text-decoration: none;
     }
+
     /*задаём ширину картинки*/
     img {
         width: 30px; /*ширина изображений*/
     }
+
     .modal-header {
         align-items: center; /*выравнивание элементов по центру*/
         border-bottom: 0.5px solid #dadada; /*свойства нижней разделительной линии*/
         height: 50px;
     }
+
     .modal-content {
         padding: 0 22px; /*отступы сверху и снизу, сверху и слева*/
     }
+
     .modal-icons {
         border-top: 0.5px solid #dadada; /*свойства верхней разделительной линии*/
         height: 50px;
         width: 100%;
     }
+
+    .no-view {
+        display: none;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .login-button {
+        cursor: pointer;
+        background-color: #4CAF50; /* Green */
+        border: none;
+        color: white;
+        padding: 10px 25px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    .login-button:hover {
+        background-color: #3d9140;
+    }
+
     .logo {
         cursor: default;
         padding: 16px; /*отступы со всех сторон*/
     }
+
     .logo-icon {
         vertical-align: text-bottom; /*выравнивание по нижней части текста*/
         margin-right: 12px; /*задётся отступ элементов от изображения*/
     }
+
     .header-text {
         cursor: default;
         color: #444;
         font-size: 18px;
     }
+
     .flex-container {
         display: flex; /*отображает контейнер в виде блочного элемента*/
         justify-content: space-between; /*равномерное выравнивание элементов*/
         padding: 10px 22px;
     }
+
     /*задаём настройки для контейнеров с иконками*/
     .flex {
         opacity: 1; /*параметр непрозрачности иконок*/
         width: 120px;
     }
+
     .flex:hover {
         opacity: 0.4; /*уровень непрозрачности при наведении курсора на элемент*/
     }
+
     .flex .fa {
         font-size: 40px;
         color: #2f5876;
@@ -333,7 +369,7 @@
     </div>
     <!--Конец контейнера-->
     <!--контейнер, содержащий настройки-->
-    <div class="modal-content">
+    <div id="main" class="modal-content">
         <p class="paragraph">✨ Основные функции</p>
         <div class="checkbox" style="margin-top: 0.5em;">
             <input class="custom-checkbox" type="checkbox" id="extendOnline" name="extendOnline" value="indigo">
@@ -362,14 +398,18 @@
             <label class="text-field__label" for="email">Email</label>
         </div>
     </div>
+    <div id="no-login" class="modal-content center no-view">
+        <h4>Для использования расширения, авторизуйтесь на сайте DL NURE</h4>
+        <button id="login-button" class="login-button">Войти</button>
+    </div>
     <!--Конец контейнера-->
     <!--контейнер, содержащий контейнеры с иконками-->
     <div class="modal-icons">
         <div class="flex-container">
         Made with ❤️ by Xploit
         <div class="right" id="res">
-        </div>
-        </div>
+    </div>
+    </div>
     </div>
     <script type="text/javascript" src="jquery-3.0.0.js"></script>
     <script type="text/javascript" src="popup.js"></script>

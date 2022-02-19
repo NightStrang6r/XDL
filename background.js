@@ -91,9 +91,36 @@ function obtainSesskey() {
             }
         });
     } catch(err) {
-        log(`>XDL: Failed to obtain sesskey. Error: ${err}`, true);
+        log(`>XDL: Failed to obtain sesskey. Error: ${err}`);
     }
     return sesskey;
+}
+
+function checkLoginState() {
+    try {
+        $.ajax({
+            url:`https://dl.nure.ua`,
+            method: 'get',
+            dataType: 'html',
+            async: true,
+            success: data => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'text/html');
+
+                let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
+                sesskey = logoutLink.split('=')[1];
+                let state = false;
+                if(sesskey && sesskey != undefined) {
+                    state = true;
+                } else {
+                    state = false;
+                }
+                chrome.runtime.sendMessage({greeting: "setLoginState", state: state});
+            }
+        });
+    } catch(err) {
+        return false;
+    }
 }
 
 function extendLoginTimeout() {
@@ -196,8 +223,10 @@ function setAttendance(link) {
 
 function sendAttendanceMail(link) {
     let mail = localStorage["email"];
+
     if(!localStorage["visitNotify"] || !mail || mail === undefined)
         return;
+
 	$.ajax({
 		url: `${XDLApi}mail/`,
 		method: 'post',
@@ -277,5 +306,9 @@ function onMessage(request, sender, sendResponse) {
         } else {
             sendResponse({farewell: "FAIL"});
         }
+    }
+
+    if (request.greeting == "checkLoginState") {
+        checkLoginState();
     }
 }
