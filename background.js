@@ -2,7 +2,6 @@ const debug = true;
 
 const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://xdl.leoit.dev/";
-const autoAttendanceTimeout = 5 * 60 * 1000; // 5 минут
 
 log(">XDL: Background.js loading...");
 
@@ -11,6 +10,10 @@ chrome.runtime.onMessage.addListener(onMessage);
 localStorage["sesskey"] = obtainSesskey();
 let extendOnlineThread;
 let autoAttendanceThread;
+
+if(!localStorage["attendanceTimeout"]) {
+    localStorage["attendanceTimeout"] = 5;
+}
 
 Main();
 
@@ -48,14 +51,14 @@ function startAutoAttendanceThread() {
     if(localStorage["autoAttendance"] === 'true') {
         log(`>XDL: AutoAttendance thread started.`);
         updateAttendanceList()
-        autoAttendanceThread = setInterval(updateAttendanceList, autoAttendanceTimeout);
+        autoAttendanceThread = setInterval(updateAttendanceList, localStorage["attendanceTimeout"] * 60 * 1000);
     }
 }
 
 function startExtendOnlineThread() {
     if(localStorage["extendOnline"] === 'true') {
         log(`>XDL: ExtendOnline thread started.`);
-        extendOnlineThread = setInterval(extendLoginTimeout, autoAttendanceTimeout);
+        extendOnlineThread = setInterval(extendLoginTimeout, 5 * 60 * 1000);
     }
 }
 
@@ -292,8 +295,10 @@ function onMessage(request, sender, sendResponse) {
         sendResponse({farewell: "OK"});
     }
 
-    if (request.greeting == "getEmail") {
-        sendResponse({email: localStorage["email"]});
+    if (request.greeting == "saveAttendanceTimeout") {
+        localStorage["attendanceTimeout"] = request.timeout;
+
+        sendResponse({farewell: "OK"});
     }
 
     if (request.greeting == "saveSesskey") {

@@ -1,25 +1,32 @@
-let area = document.getElementsByClassName("modal-content")[0];
+let menu = document.getElementById("menu");
 let checkboxes = document.getElementsByClassName("custom-checkbox");
 let loginButton = document.getElementById("login-button");
-let emailButton = document.getElementById("email_button");
-let emaitInput = document.getElementById("email_input");
+let emailButton = document.getElementById("email-button");
+let emaitInput = document.getElementById("email-input");
+let settingsMenu = document.getElementById("settings-menu");
+let settingsButton = document.getElementById("settings-button");
+let attendanceTimeout = document.getElementById("attendance-timeout");
 let settings = new Object;
 
-
+/* Main */
 chrome.runtime.onMessage.addListener(onMessage);
 
 restoreSettings();
-putSavedEmail();
 sendLoginStateRequest();
 
 for(let i = 0; i < checkboxes.length; i++){
     checkboxes[i].addEventListener("input", saveSettings);
 }
 
+menu.addEventListener("click", showMenuUI);
+window.onclick = (event) => { closeMenuIU(event) };
 loginButton.addEventListener("click", goToLogin);
 emailButton.addEventListener("click", updateEmailInput);
 emaitInput.addEventListener("input", saveEmailInput);
-
+settingsMenu.addEventListener("click", () => viewSettingsUI(true));
+settingsButton.addEventListener("click", () => viewSettingsUI(false));
+attendanceTimeout.addEventListener("input", saveAttendanceTimeoutInput);
+/* Main */
 
 function restoreSettings(){
     chrome.runtime.sendMessage({greeting: "getSettings"},
@@ -32,6 +39,8 @@ function restoreSettings(){
                     checkboxes[i].checked = false;
                 }
             }
+            emaitInput.value = settings["email"];
+            attendanceTimeout.value = settings["attendanceTimeout"];
         }
     );
 }
@@ -44,12 +53,11 @@ function setLoginState(state) {
     let main = document.getElementById("main");
     let noLogin = document.getElementById("no-login");
     
-    if(state) {
-        main.classList.remove("no-view");
-        noLogin.classList.add("no-view");
-    } else {
-        main.classList.add("no-view");
-        noLogin.classList.remove("no-view");
+    if(!state) {
+        $("#main").fadeOut(200, () => {
+            main.classList.add("no-view");
+            noLogin.classList.remove("no-view");
+        });
     }
 }
 
@@ -73,10 +81,9 @@ function saveEmailInput() {
     chrome.runtime.sendMessage({greeting: "saveEmail", email: input});
 }
 
-function putSavedEmail() {
-    chrome.runtime.sendMessage({greeting: "getEmail"}, (resp) => {
-        emaitInput.value = resp.email;
-    });
+function saveAttendanceTimeoutInput() {
+    let input = +attendanceTimeout.value;
+    chrome.runtime.sendMessage({greeting: "saveAttendanceTimeout", timeout: input});
 }
 
 function msgUI(response) {
@@ -86,6 +93,22 @@ function msgUI(response) {
         setTimeout(() => {
             $("#res").fadeOut(800);
         }, 500);
+    }
+}
+
+function viewSettingsUI(param) {
+    let main = document.getElementById("main");
+    let noLogin = document.getElementById("no-login");
+    let settings = document.getElementById("settings");
+
+    if(param) {
+        main.classList.add("no-view");
+        noLogin.classList.add("no-view");
+        settings.classList.remove("no-view");
+    } else {
+        main.classList.remove("no-view");
+        //noLogin.classList.remove("no-view");
+        settings.classList.add("no-view");
     }
 }
 
@@ -114,12 +137,11 @@ function goToLogin() {
     });
 }
 
-document.getElementById("menu").addEventListener("click", () => {
+function showMenuUI() {
     document.getElementById("myDropdown").classList.toggle("show");
-    console.log("dropdown");
-});
+}
 
-window.onclick = function(event) {
+function closeMenuIU(event) {
     if (!event.target.matches('.dropbtn')) {
 
         let dropdowns = document.getElementsByClassName("dropdown-content");
@@ -128,7 +150,6 @@ window.onclick = function(event) {
             let openDropdown = dropdowns[i];
             if (openDropdown.classList.contains('show')) {
                 openDropdown.classList.remove('show');
-                console.log("dropdown close");
             }
         }
     }
@@ -136,7 +157,6 @@ window.onclick = function(event) {
 
 function onMessage(request, sender, sendResponse) {
     if (request.greeting == "setLoginState") {
-        console.log(request.state);
         setLoginState(request.state);
     }
 }

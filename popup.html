@@ -346,6 +346,12 @@
         margin-bottom: 5px;
         transform: rotate(135deg); 
     }
+
+    .arrow-left {
+        margin: 5px;
+        margin-top: 15px;
+        transform: rotate(-135deg); 
+    }
     </style>
     <!--конец объяснения блока со стилями-->
 </head>
@@ -362,6 +368,7 @@
                 <div id="myDropdown" class="dropdown-content">
                     <a href="#">Сайт 🌍</a>
                     <a href="#">Поддержка 💸</a>
+                    <a href="#" id="settings-menu">Настройки ⚙️</a>
                     <a href="#">Режим отладки 🐞</a>
                 </div>
             </span>
@@ -391,16 +398,24 @@
         <div class="checkbox">
             <input class="custom-checkbox" type="checkbox" id="visitNotify" name="visitNotify" value="indigo">
             <label for="visitNotify">Уведомлять о посещении</label>
-            <div class="arrow arrow-bottom" id="email_button"></div>
+            <div class="arrow arrow-bottom" id="email-button"></div>
         </div>
         <div class="text-field text-field_floating-2" style="display: none;">
-            <input class="text-field__input" id="email_input" type="email" id="email" name="email" placeholder="">
-            <label class="text-field__label" for="email">Email</label>
+            <input class="text-field__input" id="email-input" type="email" name="email" placeholder="">
+            <label class="text-field__label" for="email-input">Email</label>
         </div>
     </div>
     <div id="no-login" class="modal-content center no-view">
-        <h4>Для использования расширения, авторизуйтесь на сайте DL NURE</h4>
+        <h4>Для использования расширения авторизуйтесь на сайте DL NURE</h4>
         <button id="login-button" class="login-button">Войти</button>
+    </div>
+    <div id="settings" class="modal-content no-view">
+        <div class="arrow arrow-left" id="settings-button"></div>
+        <p class="paragraph" style="margin-top: 0px;">⚙️ Настройки</p>
+        <div class="text-field text-field_floating-2">
+            <input class="text-field__input" id="attendance-timeout" type="number" name="attendance-timeout" placeholder="">
+            <label class="text-field__label" for="attendance-timeout">Таймаут проверки посещения (в минутах)</label>
+        </div>
     </div>
     <!--Конец контейнера-->
     <!--контейнер, содержащий контейнеры с иконками-->
