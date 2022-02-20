@@ -25,6 +25,10 @@ async function Main() {
     
     console.log(localStorage);
 
+    let userId = getUserId();
+    let courseId = getFirstCourseId(userId);
+    localStorage["attendanceId"] = getAttendanceId(courseId);
+
     startAutoAttendanceThread();
     startExtendOnlineThread();
 }
@@ -32,12 +36,23 @@ async function Main() {
 function log(msg, err = false) {
     const date = new Date();
 
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const second = date.getMinutes();
+    let day = date.getDate();
+    let month = date.getMonth() + 1;
+    let year = date.getFullYear();
+    let hour = date.getHours();
+    let minute = date.getMinutes();
+    let second = date.getMinutes();
+
+    if(day.toString().length == 1)
+        day = `0${day}`;
+    if(month.toString().length == 1)
+        month = `0${month}`;
+    if(hour.toString().length == 1)
+        hour = `0${hour}`;
+    if(minute.toString().length == 1)
+        minute = `0${minute}`;
+    if(second.toString().length == 1)
+        second = `0${second}`;
 
     const logText = `>[${day}.${month}.${year}] [${hour}:${minute}:${second}] >XDL: ${msg}`;
     if(!err) {
@@ -60,7 +75,7 @@ function testAjax() {
 function startAutoAttendanceThread() {
     if(localStorage["autoAttendance"] === 'true') {
         log(`AutoAttendance thread started.`);
-        updateAttendanceList()
+        updateAttendanceList();
         autoAttendanceThread = setInterval(updateAttendanceList, localStorage["attendanceTimeout"] * 60 * 1000);
     }
 }
@@ -91,8 +106,7 @@ function obtainSesskey() {
             dataType: 'html',
             async: false,
             success: data => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data, 'text/html');
+                const doc = parseDOM(data);
 
                 let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
                 sesskey = logoutLink.split('=')[1];
@@ -117,8 +131,7 @@ function sendLoginState() {
             dataType: 'html',
             async: true,
             success: data => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data, 'text/html');
+                const doc = parseDOM(data);
 
                 let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
                 sesskey = logoutLink.split('=')[1];
@@ -137,7 +150,7 @@ function sendLoginState() {
 }
 
 function setOnlineFunctions() {
-    $.ajax({
+    /*$.ajax({
 		url:`${XDLApi}setFunctions/`,
 		method: 'post',
 		dataType: 'json',
@@ -151,7 +164,85 @@ function setOnlineFunctions() {
         error: err => {
             
         }
+	});*/
+}
+
+function getAttendanceId(courseId) {
+    if(!courseId) return;
+    let attendanceId;
+    $.ajax({
+		url:`${moodleApi}/course/view.php`,
+		method: 'get',
+		dataType: 'html',
+        async: false,
+		data: {
+            id: courseId
+        },
+		success: data => {
+            const doc = parseDOM(data);
+            try {
+                attendanceId = doc
+                    .getElementsByClassName("attendance")[0]
+                    .firstElementChild
+                    .firstElementChild
+                    .lastElementChild
+                    .firstElementChild
+                    .firstElementChild
+                    .href.split("=")[1];
+            } catch(err) {
+                log(`Failed to get AttendanceId.`);
+            }
+		}
 	});
+    log(`AttendanceId: ${attendanceId} Link: ${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`);
+    return attendanceId;
+}
+
+function getFirstCourseId(userId) {
+    if(!userId) return;
+    let courseId;
+    $.ajax({
+		url:`${moodleApi}lib/ajax/service.php?sesskey=${localStorage["sesskey"]}&info=core_course_get_recent_courses`,
+		method: 'post',
+		dataType: 'json',
+        async: false,
+		data: `[{"index":0,"methodname":"core_course_get_recent_courses","args":{"userid":${userId},"limit":1}}]`,
+        contentType: "application/json",
+		success: data => {
+            data = data[0];
+            if(data && !data.error) {
+                courseId = data.data[0].id;
+            }
+		}
+	});
+    log(`CourseId: ${courseId}`);
+    return courseId;
+}
+
+function getUserId() {
+    let userId;
+    try {
+        $.ajax({
+            url: moodleApi,
+            method: 'get',
+            dataType: 'html',
+            async: false,
+            success: data => {
+                const doc = parseDOM(data);
+
+                let userLink = doc.getElementsByClassName("logininfo")[0].firstElementChild.href;
+                userId = userLink.split('=')[1];
+                if(userId && userId != undefined) {
+                    log(`UserId: ${userId}`);
+                } else {
+                    log(`Failed to get UserId.`);
+                }
+            }
+        });
+    } catch(err) {
+        log(`Failed to get UserId Error: ${err}`);
+    }
+    return userId;
 }
 
 function extendLoginTimeout() {
@@ -172,15 +263,20 @@ function extendLoginTimeout() {
 }
 
 function updateAttendanceList() {
+    if(!localStorage["attendanceId"]) {
+        log(`Invalid attendanceId: ${localStorage["attendanceId"]}. Can't updateAttendanceList`);
+        return;
+    }
+
 	$.ajax({
 		url:`${moodleApi}mod/attendance/view.php`,
-		//url: `https://leoitdev.ru/api/XDL/test.php`,
 		method: 'get',
 		dataType: 'html',
 		data: {
 			id: 193690,
 			mode: 2,
-			view: 5
+			view: 5,
+            sesscourses: "all"
 		},
 		success: data => {
 			let word = "attendance.php?";
@@ -211,8 +307,7 @@ function setAttendance(link) {
 		dataType: 'html',
 		success: data => {
             if(data.includes(`Сохранить`)) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data, 'text/html');
+                const doc = parseDOM(data);
 
                 let vars = doc.getElementsByClassName("statusdesc");
                 let sessid, sesskey, status;
@@ -270,6 +365,11 @@ function sendAttendanceMail(link) {
 			log(`Запрос об отправке письма на почту ${mail} отправлен. Ответ: ${data}`);
 		}
 	});
+}
+
+function parseDOM(html) {
+    const parser = new DOMParser();
+    return parser.parseFromString(html, 'text/html');
 }
 
 function getAllIndexes(arr, val) {
