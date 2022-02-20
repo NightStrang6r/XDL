@@ -3,7 +3,7 @@ const debug = true;
 const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://xdl.leoit.dev/";
 
-log(">XDL: Background.js loading...");
+log("Background.js loading...");
 
 chrome.runtime.onMessage.addListener(onMessage);
 
@@ -17,7 +17,7 @@ if(!localStorage["attendanceTimeout"]) {
 
 Main();
 
-log(">XDL: Background.js loaded.");
+log("Background.js loaded.");
 
 async function Main() {
     if(!localStorage["sesskey"])
@@ -30,10 +30,20 @@ async function Main() {
 }
 
 function log(msg, err = false) {
+    const date = new Date();
+
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const second = date.getMinutes();
+
+    const logText = `>[${day}.${month}.${year}] [${hour}:${minute}:${second}] >XDL: ${msg}`;
     if(!err) {
-        console.log(msg);
+        console.log(logText);
     } else {
-        console.error(msg);
+        console.error(logText);
     }
 }
 
@@ -49,7 +59,7 @@ function testAjax() {
 
 function startAutoAttendanceThread() {
     if(localStorage["autoAttendance"] === 'true') {
-        log(`>XDL: AutoAttendance thread started.`);
+        log(`AutoAttendance thread started.`);
         updateAttendanceList()
         autoAttendanceThread = setInterval(updateAttendanceList, localStorage["attendanceTimeout"] * 60 * 1000);
     }
@@ -57,26 +67,26 @@ function startAutoAttendanceThread() {
 
 function startExtendOnlineThread() {
     if(localStorage["extendOnline"] === 'true') {
-        log(`>XDL: ExtendOnline thread started.`);
+        log(`ExtendOnline thread started.`);
         extendOnlineThread = setInterval(extendLoginTimeout, 5 * 60 * 1000);
     }
 }
 
 function stopAutoAttendanceThread() {
     clearInterval(autoAttendanceThread);
-    log(`>XDL: AutoAttendance thread stopped.`);
+    log(`AutoAttendance thread stopped.`);
 }
 
 function stopExtendOnlineThread() {
     clearInterval(extendOnlineThread);
-    log(`>XDL: ExtendOnline thread stopped.`);
+    log(`ExtendOnline thread stopped.`);
 }
 
 function obtainSesskey() {
     let sesskey;
     try {
         $.ajax({
-            url:`https://dl.nure.ua`,
+            url: moodleApi,
             method: 'get',
             dataType: 'html',
             async: false,
@@ -87,19 +97,19 @@ function obtainSesskey() {
                 let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
                 sesskey = logoutLink.split('=')[1];
                 if(sesskey && sesskey != undefined) {
-                    log(`>XDL: Successfully obtained session key: ${sesskey}`);
+                    log(`Successfully obtained session key: ${sesskey}`);
                 } else {
-                    log(`>XDL: Failed to obtain sesskey: user need to log in DL.`);
+                    log(`Failed to obtain sesskey: user need to log in DL.`);
                 }
             }
         });
     } catch(err) {
-        log(`>XDL: Failed to obtain sesskey. Error: ${err}`);
+        log(`Failed to obtain sesskey. Error: ${err}`);
     }
     return sesskey;
 }
 
-function checkLoginState() {
+function sendLoginState() {
     try {
         $.ajax({
             url:`https://dl.nure.ua`,
@@ -126,6 +136,24 @@ function checkLoginState() {
     }
 }
 
+function setOnlineFunctions() {
+    $.ajax({
+		url:`${XDLApi}setFunctions/`,
+		method: 'post',
+		dataType: 'json',
+		data: {
+            settings: localStorage
+        },
+        contentType: "application/json",
+		success: data => {
+            
+		},
+        error: err => {
+            
+        }
+	});
+}
+
 function extendLoginTimeout() {
     if(!localStorage["sesskey"]) return;
     $.ajax({
@@ -135,10 +163,10 @@ function extendLoginTimeout() {
 		data: '[{"index":0,"methodname":"core_session_touch","args":{}}]',
         contentType: "application/json",
 		success: data => {
-            log(`>XDL: Login timeout updated`);
+            log(`Login timeout updated`);
 		},
         error: err => {
-            log(`>XDL: Failed to update login timeout`);
+            log(`Failed to update login timeout`);
         }
 	});
 }
@@ -168,7 +196,7 @@ function updateAttendanceList() {
 					link = "";
 				});
 			}else{
-				log(">XDL: Нет доступных полей для отметки посещения.");
+				log("Нет доступных полей для отметки посещения.");
 			}
 		}
 	});
@@ -212,13 +240,13 @@ function setAttendance(link) {
                         },
                         success: data => {
                             sendAttendanceMail(fullLink);
-                            log(">XDL: Посещение отмечено. (adv)");
+                            log("Посещение отмечено. (adv)");
                         }
                     });
                 }
             } else {
                 sendAttendanceMail(fullLink);
-                log(">XDL: Посещение отмечено.");
+                log("Посещение отмечено.");
             }
 		}
 	});
@@ -239,7 +267,7 @@ function sendAttendanceMail(link) {
 			link: link
 		},
 		success: data => {
-			log(`>XDL: Запрос об отправке письма на почту ${mail} отправлен. Ответ: ${data}`);
+			log(`Запрос об отправке письма на почту ${mail} отправлен. Ответ: ${data}`);
 		}
 	});
 }
@@ -271,15 +299,21 @@ function onMessage(request, sender, sendResponse) {
         Object.assign(lsBackup, localStorage);
         for (let key in request.settings) {
             localStorage[key] = request.settings[key];
+        }
 
-            if(key == `autoAttendance` && lsBackup[key] != localStorage[key]) {
-                stopAutoAttendanceThread();
-                startAutoAttendanceThread();
-            }
-            if(key == `extendOnline` && lsBackup[key] != localStorage[key]) {
-                stopExtendOnlineThread();
-                startExtendOnlineThread();
-            }
+        if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
+            stopAutoAttendanceThread();
+            startAutoAttendanceThread();
+        }
+
+        if(lsBackup["extendOnline"] != localStorage["extendOnline"]) {
+            stopExtendOnlineThread();
+            startExtendOnlineThread();
+        }
+
+        if(lsBackup["sAutoAttendance"] != localStorage["sAutoAttendance"]
+        || lsBackup["sExtendOnline"] != localStorage["sExtendOnline"]) {
+            setOnlineFunctions();
         }
 
         sendResponse({farewell: "Сохранено"});
@@ -301,12 +335,18 @@ function onMessage(request, sender, sendResponse) {
         sendResponse({farewell: "OK"});
     }
 
-    if (request.greeting == "saveSesskey") {
-        if(request.sesskey) {
-            if(localStorage["sesskey"] != request.sesskey) {
-                localStorage["sesskey"] = request.sesskey;
-                log(`>XDL: Received new session key: ${localStorage["sesskey"]}`);
+    if (request.greeting == "saveAuth") {
+        if(request.auth && request.auth.sesskey && request.auth.session) {
+            if(localStorage["sesskey"] != request.auth.sesskey) {
+                localStorage["sesskey"] = request.auth.sesskey;
+                log(`Received new session key: ${localStorage["sesskey"]}`);
             }
+
+            if(localStorage["session"] != request.auth.session) {
+                localStorage["session"] = request.auth.session;
+                log(`Received new session: ${localStorage["session"]}`);
+            }
+
             sendResponse({farewell: "OK"});
         } else {
             sendResponse({farewell: "FAIL"});
@@ -314,6 +354,6 @@ function onMessage(request, sender, sendResponse) {
     }
 
     if (request.greeting == "checkLoginState") {
-        checkLoginState();
+        sendLoginState();
     }
 }

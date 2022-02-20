@@ -5,7 +5,6 @@ const XDLApi = "https://leoitdev.ru/api/XDL/";
 
 log(">XDL: Main.js loading...");
 
-let sesskey = obtainSesskey();
 let settings;
 
 Main();
@@ -16,12 +15,15 @@ async function Main() {
     log(`>XDL: Settings loaded:`);
     log(settings);
 
-    if(sesskey) {
-        await saveSesskey(sesskey);
+    let auth = obtainAuth();
+    if(!auth || !auth.session || !auth.sesskey) {
+        return;
     }
 
-    log(">XDL: Main.js loaded.");
+    await saveAuth(auth);
 }
+
+log(">XDL: Main.js loaded.");
 
 /* FUNCTIONS */
 
@@ -35,16 +37,25 @@ function log(msg, err = false) {
     }
 }
 
-function obtainSesskey() {
-    let sesskey;
+function obtainAuth() {
+    let session, sesskey;
     try {
         let logoutLink = document.getElementsByClassName("logininfo")[0].lastElementChild.href;
         sesskey = logoutLink.split('=')[1];
-        log(`>XDL: Successfully obtained session key: ${sesskey}`);
+        session = getCookie('MoodleSession');
+        if(!sesskey) {
+            log(`>XDL: Failed to obtain sesskey. Sesskey: ${sesskey}`);
+            return {session, sesskey};
+        }
+        if(!session) {
+            log(`>XDL: Failed to obtain session. Session: ${session}`);
+            return {session, sesskey};
+        }
+        log(`>XDL: Successfully obtained auth: ${session}, ${sesskey}`);
     } catch(err) {
-        log(`>XDL: Failed to obtain sesskey. Error: ${err}`);
+        log(`>XDL: Failed to obtain auth. Error: ${err}`);
     }
-    return sesskey;
+    return {session, sesskey};
 }
 
 function getSettings() {
@@ -56,13 +67,20 @@ function getSettings() {
     return settings;
 }
 
-function saveSesskey(sesskey) {
+function saveAuth(auth) {
     let response = new Promise (resolve => {
-        chrome.runtime.sendMessage({greeting: "saveSesskey", sesskey: sesskey},
+        chrome.runtime.sendMessage({greeting: "saveAuth", auth: auth},
         resp => resolve(resp.farewell));
     });
     
     return response;
+}
+
+function getCookie(name) {
+    let matches = document.cookie.match(new RegExp(
+        "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+    ));
+    return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
 /* FUNCTIONS */
