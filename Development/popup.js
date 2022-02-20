@@ -142,7 +142,7 @@ function showMenuUI() {
 }
 
 function closeMenuIU(event) {
-    if (!event.target.matches('.dropbtn')) {
+    if (!event.target.matches('#menu')) {
 
         let dropdowns = document.getElementsByClassName("dropdown-content");
         let i;

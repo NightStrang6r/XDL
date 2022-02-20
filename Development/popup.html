@@ -201,10 +201,13 @@
     .dropbtn {
         display: inline;
         width: 100%;
-        cursor: pointer;
         position: absolute;
         text-align: right;
         right: 10px;
+    }
+
+    #menu {
+        cursor: pointer;
     }
 
     .dropdown {
@@ -367,13 +370,15 @@
             <img class="logo-icon" src="logo.png">
             <span>XDL</span>
             <span class="header-text">v0.2</span>
-            <div class="header-text dropbtn" id="menu">Menu</div>
+            <div class="header-text dropbtn">
+                <span id="menu">Menu</span>
+            </div>
             <span class="dropdown right">
                 <div id="myDropdown" class="dropdown-content">
                     <a href="#">Сайт 🌍</a>
                     <a href="#" >Телеграм ✈️</a>
                     <a href="#" id="settings-menu">Настройки ⚙️</a>
-                    <a href="#">Поддержка проекта 💸</a>
+                    <a href="#">Поддержка проекта ❤️</a>
                     <!-- <a href="#">Режим отладки 🐞</a> -->
                 </div>
             </span>
