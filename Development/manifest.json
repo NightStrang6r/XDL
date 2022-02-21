@@ -11,7 +11,7 @@
         },
     "background": {
         "scripts": [
-            "jquery-3.0.0.js",
+            "jquery-3.6.0.min.js",
             "background.js"
         ]
     },
@@ -22,7 +22,7 @@
                 "https://dl.nure.ua/*"
             ],
             "js": [
-                "jquery-3.0.0.js",
+                "jquery-3.6.0.min.js",
                 "main.js"
             ]
         }
