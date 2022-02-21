@@ -1,5 +1,3 @@
-const debug = true;
-
 const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://xdl.leoit.dev/";
 
@@ -15,23 +13,29 @@ if(!localStorage["attendanceTimeout"]) {
     localStorage["attendanceTimeout"] = 5;
 }
 
+if(!localStorage["email"]) {
+    localStorage["email"] = "";
+}
+
 Main();
 
 log("Background.js loaded.");
 
 async function Main() {
-    if(!localStorage["sesskey"])
+    if(!localStorage["sesskey"] || localStorage["sesskey"] == 'undefined')
         return;
     
     console.log(localStorage);
 
-    let userId = getUserId();
-    let courseId = getFirstCourseId(userId);
-    localStorage["attendanceId"] = getAttendanceId(courseId);
+    updateAttendanceId();
 
+    stopAutoAttendanceThread();
+    stopExtendOnlineThread();
     startAutoAttendanceThread();
     startExtendOnlineThread();
 }
+
+/* FUNCTIONS */
 
 function log(msg, err = false) {
     const date = new Date();
@@ -60,16 +64,6 @@ function log(msg, err = false) {
     } else {
         console.error(logText);
     }
-}
-
-function testAjax() {
-    $.ajax({
-		url:`https://dl.nure.ua`,
-		method: 'get',
-		success: data => {
-            console.log(data);
-		}
-	});
 }
 
 function startAutoAttendanceThread() {
@@ -121,6 +115,12 @@ function obtainSesskey() {
         log(`Failed to obtain sesskey. Error: ${err}`);
     }
     return sesskey;
+}
+
+function updateAttendanceId() {
+    let userId = getUserId();
+    let courseId = getFirstCourseId(userId);
+    localStorage["attendanceId"] = getAttendanceId(courseId);
 }
 
 function sendLoginState() {
@@ -273,7 +273,7 @@ function updateAttendanceList() {
 		method: 'get',
 		dataType: 'html',
 		data: {
-			id: 193690,
+			id: localStorage["attendanceId"],
 			mode: 2,
 			view: 5,
             sesscourses: "all"
@@ -440,6 +440,7 @@ function onMessage(request, sender, sendResponse) {
             if(localStorage["sesskey"] != request.auth.sesskey) {
                 localStorage["sesskey"] = request.auth.sesskey;
                 log(`Received new session key: ${localStorage["sesskey"]}`);
+                Main();
             }
 
             if(localStorage["session"] != request.auth.session) {
@@ -457,3 +458,5 @@ function onMessage(request, sender, sendResponse) {
         sendLoginState();
     }
 }
+
+/* FUNCTIONS */

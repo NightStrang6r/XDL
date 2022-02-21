@@ -8,6 +8,8 @@ let settingsButton = document.getElementById("settings-button");
 let attendanceTimeout = document.getElementById("attendance-timeout");
 let settings = new Object;
 
+let msgUITimeout;
+
 /* Main */
 chrome.runtime.onMessage.addListener(onMessage);
 
@@ -90,7 +92,8 @@ function msgUI(response) {
     if(document.getElementById("res")){
         $("#res").fadeIn(1);
         document.getElementById("res").innerHTML = response.farewell;
-        setTimeout(() => {
+        clearTimeout(msgUITimeout);
+        msgUITimeout = setTimeout(() => {
             $("#res").fadeOut(800);
         }, 500);
     }
