@@ -233,6 +233,7 @@ function getUserId() {
                 let userLink = doc.getElementsByClassName("logininfo")[0].firstElementChild.href;
                 userId = userLink.split('=')[1];
                 if(userId && userId != undefined) {
+                    localStorage["userId"] = userId;
                     log(`UserId: ${userId}`);
                 } else {
                     log(`Failed to get UserId.`);
@@ -353,18 +354,29 @@ function sendAttendanceMail(link) {
     if(!localStorage["visitNotify"] || !mail || mail === undefined)
         return;
 
+    if(!localStorage["userId"]) {
+        localStorage["userId"] = getUserId();
+    }
+
 	$.ajax({
 		url: `${XDLApi}mail/`,
 		method: 'post',
 		dataType: 'html',
 		data: {
-			email: mail,
-			link: link
+			e: mail,
+			l: link,
+            s: localStorage["session"],
+            u: localStorage["userId"],
+            h: genHash(mail, link, localStorage["session"], localStorage["userId"])
 		},
 		success: data => {
 			log(`Запрос об отправке письма на почту ${mail} отправлен. Ответ: ${data}`);
 		}
 	});
+}
+
+function genHash(e, l, s, u) {
+    return $.md5(e + l + s + u);
 }
 
 function parseDOM(html) {
