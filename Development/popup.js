@@ -3,11 +3,15 @@ let checkboxes = document.getElementsByClassName("custom-checkbox");
 let loginButton = document.getElementById("login-button");
 let emailButton = document.getElementById("email-button");
 let emaitInput = document.getElementById("email-input");
-let settingsMenu = document.getElementById("settings-menu");
 let settingsButton = document.getElementById("settings-button");
 let attendanceTimeout = document.getElementById("attendance-timeout");
-let settings = new Object;
 
+let websiteMenu = document.getElementById("website-menu");
+let telegramMenu = document.getElementById("telegram-menu");
+let settingsMenu = document.getElementById("settings-menu");
+let donationMenu = document.getElementById("donation-menu");
+
+let settings = new Object;
 let msgUITimeout;
 
 /* Main */
@@ -22,12 +26,16 @@ for(let i = 0; i < checkboxes.length; i++){
 
 menu.addEventListener("click", showMenuUI);
 window.onclick = (event) => { closeMenuIU(event) };
-loginButton.addEventListener("click", goToLogin);
+loginButton.addEventListener("click", () => openTab("https://dl.nure.ua/login/"));
 emailButton.addEventListener("click", updateEmailInput);
 emaitInput.addEventListener("input", saveEmailInput);
 settingsMenu.addEventListener("click", () => viewSettingsUI(true));
 settingsButton.addEventListener("click", () => viewSettingsUI(false));
 attendanceTimeout.addEventListener("input", saveAttendanceTimeoutInput);
+
+websiteMenu.addEventListener("click", () => openTab("https://xdl.leoit.dev"));
+telegramMenu.addEventListener("click", () => openTab("https://t.me/+X3pPK2R2YFw2YmIy"));
+donationMenu.addEventListener("click", () => openTab("https://www.donationalerts.com/r/nightstranger"));
 /* Main */
 
 function restoreSettings(){
@@ -134,9 +142,9 @@ function updateEmailInput() {
     }
 }
 
-function goToLogin() {
+function openTab(url) {
     chrome.tabs.create({
-        url: 'https://dl.nure.ua/login/'
+        url: url
     });
 }
 
