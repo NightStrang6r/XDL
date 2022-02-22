@@ -351,7 +351,7 @@ function setAttendance(link) {
 function sendAttendanceMail(link) {
     let mail = localStorage["email"];
 
-    if(!localStorage["visitNotify"] || !mail || mail === undefined)
+    if(localStorage["visitNotify"] != 'true' || !mail || mail === undefined)
         return;
 
     if(!localStorage["userId"]) {
