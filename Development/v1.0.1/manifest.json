@@ -3,12 +3,12 @@
     "name": "XDL for DL.NURE",
     "author": "NightStranger",
     "description": "Помощник для платформы дистанционного обучения DL.NURE",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "icons": {"64": "logo.png"},
     "browser_action": {
-            "default_icon": "logo.png",
-            "default_popup": "popup.html"
-        },
+        "default_icon": "logo.png",
+        "default_popup": "popup.html"
+    },
     "background": {
         "scripts": [
             "jquery-3.6.0.min.js",
@@ -25,7 +25,8 @@
             "js": [
                 "jquery-3.6.0.min.js",
                 "main.js"
-            ]
+            ],
+            "run_at": "document_start"
         }
     ],
     "permissions": [

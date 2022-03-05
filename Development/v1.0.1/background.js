@@ -445,6 +445,14 @@ function onMessage(request, sender, sendResponse) {
             isOffline = true;
         }
 
+        if(lsBackup["darkMode"] != localStorage["darkMode"]) {
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
+                const tabId = tabs[0].id;
+                chrome.tabs.sendMessage(tabId, {greeting: "setDarkMode", dark: localStorage["darkMode"]});
+            });
+            isOffline = true;
+        }
+
         if(!isOffline) {
             sendResponse({animate: true});
             setOnlineFunctions();

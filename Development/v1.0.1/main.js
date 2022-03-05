@@ -1,20 +1,28 @@
 const debug = true;
-
 const moodleApi = "https://dl.nure.ua/";
 const XDLApi = "https://xdl.leoit.dev/";
-
-log(">XDL: Main.js loading...");
-
 let settings;
 
-Main();
+log(">XDL: main.js loading...");
 
-async function Main() {
+document.onload = main();
+document.addEventListener("DOMContentLoaded", ready);
+chrome.runtime.onMessage.addListener(onMessage);
+
+async function main() {
+    settings = getLocalSettings();
+    if(settings && settings.darkMode == 'true' || settings.darkMode == true) {
+        setDarkMode(true);
+    }
+    
     settings = await getSettings();
+    saveLocalSettings(settings);
 
     log(`>XDL: Settings loaded:`);
     log(settings);
+}
 
+async function ready() {
     let auth = obtainAuth();
     if(!auth || !auth.session || !auth.sesskey) {
         return;
@@ -23,7 +31,7 @@ async function Main() {
     await saveAuth(auth);
 }
 
-log(">XDL: Main.js loaded.");
+log(">XDL: main.js loaded.");
 
 /* FUNCTIONS */
 
@@ -67,6 +75,23 @@ function getSettings() {
     return settings;
 }
 
+function getLocalSettings() {
+    let settings;
+    if(localStorage["XDLSettings"]) {
+        try {
+            settings = JSON.parse(localStorage["XDLSettings"]);
+        } catch(err) {
+            log(`>XDL: Ошибка при парсинге настроек: ${err}`);
+            settings = false;
+        }
+    }
+    return settings;
+}
+
+function saveLocalSettings(settings) {
+    localStorage["XDLSettings"] = JSON.stringify(settings);
+}
+
 function saveAuth(auth) {
     let response = new Promise (resolve => {
         chrome.runtime.sendMessage({greeting: "saveAuth", auth: auth},
@@ -76,6 +101,24 @@ function saveAuth(auth) {
     return response;
 }
 
+async function setDarkMode(on) {
+    if(on) {
+        const style = document.createElement("style");
+        style.classList.add("darkMode");
+        style.innerHTML = `html, body, body :not(iframe) {
+            background-color: #181a1b !important;
+            border-color: #776e62 !important;
+            color: #e8e6e3 !important;
+        }`;
+        document.firstElementChild.appendChild(style);
+    } else {
+        const style = document.querySelector(".darkMode");
+        if(style != null) {
+            style.remove();
+        }
+    }
+}
+
 function getCookie(name) {
     let matches = document.cookie.match(new RegExp(
         "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
@@ -83,4 +126,16 @@ function getCookie(name) {
     return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
+function onMessage(request, sender, sendResponse) {
+    if (request.greeting == "setDarkMode") {
+        if(request.dark == 'true') {
+            settings.darkMode = true;
+            setDarkMode(true);
+        } else {
+            settings.darkMode = false;
+            setDarkMode(false);
+        }
+        saveLocalSettings(settings);
+    }
+}
 /* FUNCTIONS */
