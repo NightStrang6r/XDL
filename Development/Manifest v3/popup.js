@@ -97,6 +97,13 @@ function saveAttendanceTimeoutInput() {
 }
 
 function msgUI(response) {
+    if(!response) return;
+
+    if(response.animate) {
+        loadingAnimationUI();
+        return;
+    }
+
     if(document.getElementById("res")){
         $("#res").fadeIn(1);
         document.getElementById("res").innerHTML = response.farewell;
@@ -166,8 +173,32 @@ function closeMenuIU(event) {
     }
 }
 
+function loadingAnimationUI(stop = false) {
+    if(stop) {
+        clearInterval(msgUITimeout);
+        document.getElementById("res").innerHTML = "";
+        return;
+    }
+
+    const f = ['🌑', '🌒', '🌓', '🌔', '🌝', '🌖', '🌗', '🌘'];
+
+    function loop() {
+        document.getElementById("res").innerHTML = f[Math.floor((Date.now()/100)%f.length)];
+        msgUITimeout = setTimeout(loop, 50);
+    }
+
+    loop();
+}
+
 function onMessage(request, sender, sendResponse) {
     if (request.greeting == "setLoginState") {
         setLoginState(request.state);
+        return;
+    }
+
+    if (request.greeting == "setLoading") {
+        loadingAnimationUI(true);
+        msgUI(request);
+        return;
     }
 }

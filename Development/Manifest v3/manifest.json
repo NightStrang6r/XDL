@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
-    "name": "XDL for DL.NURE",
+    "name": "XDL",
     "author": "NightStranger",
-    "description": "Помощник для платформы дистанционного обучения DL.NURE",
-    "version": "1.0.1",
+    "description": "Помощник для платформы дистанционного обучения на платформе DL.NURE",
+    "version": "1.0.3",
     "icons": {"64": "logo.png"},
     "action": {
         "default_icon": "logo.png",
@@ -25,6 +25,7 @@
         }
     ],
     "permissions": [
+        "storage",
         "tabs"
     ],
     "content_security_policy": {

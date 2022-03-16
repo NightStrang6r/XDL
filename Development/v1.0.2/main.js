@@ -11,7 +11,7 @@ chrome.runtime.onMessage.addListener(onMessage);
 
 async function main() {
     settings = getLocalSettings();
-    if(settings && settings.darkMode == 'true' || settings.darkMode == true) {
+    if(settings && (settings.darkMode == 'true' || settings.darkMode == true)) {
         setDarkMode(true);
     }
     
