@@ -3,11 +3,10 @@ const XDLApi = "https://xdl.leoit.dev/";
 
 log("Background.js loading...");
 
+importScripts('crypt.js');
 chrome.runtime.onMessage.addListener(onMessage);
 
-/*const sesskeyGl = await obtainSesskey();
-await setValue("sesskey", sesskeyGl);
-let extendOnlineThread;
+/*let extendOnlineThread;
 let autoAttendanceThread;
 
 const attendanceTimeoutGl = await getValue("attendanceTimeout");
@@ -24,16 +23,18 @@ Main();
 
 log("Background.js loaded.");
 
-async function Main() {
+async function Main(sesskey = false) {
     try {
+        if(!sesskey) {
+            sesskey = await obtainSesskey();
+            await setValue("sesskey", sesskey);
+        }
+        
         const localStorage = await getValue(null);
-        /*if(!localStorage || !localStorage["sesskey"] || localStorage["sesskey"] == 'undefined')
-            return;*/
+        if(!localStorage || !localStorage["sesskey"] || localStorage["sesskey"] == 'undefined')
+            return;
         
         console.log(localStorage);
-    
-        const userId = await getUserId();
-        console.log(userId);
 
         /*
         updateAttendanceId();
@@ -112,23 +113,30 @@ function stopExtendOnlineThread() {
 async function obtainSesskey() {
     let sesskey;
     try {
-        $.ajax({
-            url: moodleApi,
-            method: 'get',
-            dataType: 'html',
-            async: false,
-            success: data => {
-                const doc = parseDOM(data);
+        const options = {
+            method: 'GET'
+        };
+        const response = await fetch(`${moodleApi}my/`, options);
+        if (!response.ok) {
+            throw new Error('Fetch error: Failed to get UserId.');
+        }
+        const data = await response.text();
+        const link = "https://dl.nure.ua/login/logout.php?sesskey=";
+        const linkPos = data.indexOf(link);
 
-                let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
-                sesskey = logoutLink.split('=')[1];
-                if(sesskey && sesskey != undefined) {
-                    log(`Successfully obtained session key: ${sesskey}`);
-                } else {
-                    log(`Failed to obtain sesskey: user need to log in DL.`);
-                }
+        if(linkPos != -1) {
+            sesskey = "";
+            for(let i = linkPos + link.length; i < data.length; i++) {
+                if(data[i] == `"`) break;
+                sesskey += data[i];
             }
-        });
+        }
+
+        if(sesskey && sesskey != undefined) {
+            log(`Successfully obtained session key: ${sesskey}`);
+        } else {
+            log(`Failed to obtain sesskey: user need to log in DL.`);
+        }
     } catch(err) {
         log(`Failed to obtain sesskey. Error: ${err}`);
     }
@@ -142,28 +150,19 @@ async function updateAttendanceId() {
     await setValue("attendanceId", attendanceId);
 }
 
-function sendLoginState() {
+async function sendLoginState() {
     try {
-        $.ajax({
-            url:`https://dl.nure.ua`,
-            method: 'get',
-            dataType: 'html',
-            async: true,
-            success: data => {
-                const doc = parseDOM(data);
+        const sesskey = await obtainSesskey();
 
-                let logoutLink = doc.getElementsByClassName("logininfo")[0].lastElementChild.href;
-                sesskey = logoutLink.split('=')[1];
-                let state = false;
-                if(sesskey && sesskey != undefined) {
-                    state = true;
-                } else {
-                    state = false;
-                }
-                chrome.runtime.sendMessage({greeting: "setLoginState", state: state});
-            }
-        });
+        let state = false;
+        if(sesskey && sesskey != undefined) {
+            state = true;
+        } else {
+            state = false;
+        }
+        chrome.runtime.sendMessage({greeting: "setLoginState", state: state});
     } catch(err) {
+        log(`Failed to send login state: ${err}`);
         return false;
     }
 }
@@ -195,54 +194,64 @@ function setOnlineFunctions() {
 	});
 }
 
-function getAttendanceId(courseId) {
+async function getAttendanceId(courseId) {
     if(!courseId) return;
     let attendanceId;
-    $.ajax({
-		url:`${moodleApi}/course/view.php`,
-		method: 'get',
-		dataType: 'html',
-        async: false,
-		data: {
-            id: courseId
-        },
-		success: data => {
-            const doc = parseDOM(data);
-            try {
-                attendanceId = doc
-                    .getElementsByClassName("attendance")[0]
-                    .firstElementChild
-                    .firstElementChild
-                    .lastElementChild
-                    .firstElementChild
-                    .firstElementChild
-                    .href.split("=")[1];
-            } catch(err) {
-                log(`Failed to get AttendanceId.`);
-            }
-		}
-	});
-    log(`AttendanceId: ${attendanceId} Link: ${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`);
+
+    const url = `${moodleApi}/course/view.php?id=${courseId}`;
+    const options = {
+        method: 'GET'
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error('Fetch error: Failed to get AttendanceId.');
+    }
+    const data = await response.text();
+    const link = "https://dl.nure.ua/mod/attendance/view.php?id=";
+    const linkPos = data.indexOf(link);
+
+    if(linkPos != -1) {
+        attendanceId = "";
+        for(let i = linkPos + link.length; i < data.length; i++) {
+            if(isNaN(Number(data[i]))) break;
+            attendanceId += data[i];
+        }
+        attendanceId = Number(attendanceId);
+    }
+
+    if(attendanceId && attendanceId != undefined) {
+        log(`AttendanceId: ${attendanceId} Link: ${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`);
+    } else {
+        log(`Failed to get AttendanceId.`);
+    }
+
     return attendanceId;
 }
 
-function getFirstCourseId(userId) {
+async function getFirstCourseId(userId) {
     if(!userId) return;
     let courseId;
-    $.ajax({
-		url:`${moodleApi}lib/ajax/service.php?sesskey=${localStorage["sesskey"]}&info=core_course_get_recent_courses`,
-		method: 'post',
-		dataType: 'json',
-        async: false,
-		data: `[{"index":0,"methodname":"core_course_get_recent_courses","args":{"userid":${userId},"limit":1}}]`,
-        contentType: "application/json",
-		success: data => {
-            data = data[0];
-            if(data && !data.error) {
-                courseId = data.data[0].id;
-            }
-		}
-	});
+
+    const sesskey = await getValue("sesskey");
+    const url = `${moodleApi}lib/ajax/service.php?sesskey=${sesskey}&info=core_course_get_recent_courses`;
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: `[{"index":0,"methodname":"core_course_get_recent_courses","args":{"userid":${userId},"limit":1}}]`
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error('Fetch error: Failed to get FirstCourseId.');
+    }
+    const data = await response.json();
+
+    let dat = data[0];
+    if(dat && !dat.error) {
+        courseId = dat.data[0].id;
+    }
+
     log(`CourseId: ${courseId}`);
     return courseId;
 }
@@ -253,20 +262,26 @@ async function getUserId() {
         const options = {
             method: 'GET'
         };
-        const response = await fetch(moodleApi, options);
+        const response = await fetch(`${moodleApi}my/`, options);
         if (!response.ok) {
             throw new Error('Fetch error: Failed to get UserId.');
         }
         const data = await response.text();
-        const doc = parseDOM(data);
+        const link = "https://dl.nure.ua/user/profile.php?id=";
+        const linkPos = data.indexOf(link);
 
-        const userLink = doc.getElementsByClassName("logininfo")[0].firstElementChild.href;
-        userId = userLink.split('=')[1];
+        userId = "";
+        for(let i = linkPos + link.length; i < data.length; i++) {
+            if(isNaN(Number(data[i]))) break;
+            userId += data[i];
+        }
+        userId = Number(userId);
+
         if(userId && userId != undefined) {
             await setValue("userId", userId);
             log(`UserId: ${userId}`);
         } else {
-            log(`Failed to get UserId.`);
+            log(`Failed to get UserId. Is user logged in?`);
         }
     } catch(err) {
         log(`Failed to get UserId Error: ${err}`);
@@ -274,133 +289,185 @@ async function getUserId() {
     return userId;
 }
 
-function extendLoginTimeout() {
-    if(!localStorage["sesskey"]) return;
-    $.ajax({
-		url:`${moodleApi}lib/ajax/service.php?sesskey=${localStorage["sesskey"]}&info=core_session_touch`,
-		method: 'post',
-		dataType: 'json',
-		data: '[{"index":0,"methodname":"core_session_touch","args":{}}]',
-        contentType: "application/json",
-		success: data => {
-            log(`Login timeout updated`);
-		},
-        error: err => {
-            log(`Failed to update login timeout`);
+async function extendLoginTimeout() {
+    try {
+        const sesskey = await getValue("sesskey");
+        if(!sesskey) {
+            log(`Failed to extendLoginTimeout: no sesskey provided`);
+            return;
         }
-	});
+    
+        const url = `${moodleApi}lib/ajax/service.php?sesskey=${sesskey}&info=core_session_touch`;
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: '[{"index":0,"methodname":"core_session_touch","args":{}}]'
+        };
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error('Fetch error: Failed to extendLoginTimeout.');
+        }
+        const data = await response.json();
+
+        if(!data[0].error) {
+            log(`Login timeout updated`);
+        } else {
+            log(`Failed to extendLoginTimeout: response error`);
+        }
+    } catch (err) {
+        log(`Failed to extendLoginTimeout: ${err}`);
+    }
 }
 
-function updateAttendanceList() {
-    if(!localStorage["attendanceId"]) {
-        log(`Invalid attendanceId: ${localStorage["attendanceId"]}. Can't updateAttendanceList`);
+async function updateAttendanceList() {
+    const attendanceId = await getValue("attendanceId");
+    if(!attendanceId) {
+        log(`Invalid attendanceId: ${attendanceId}. Can't updateAttendanceList`);
         return;
     }
 
-	$.ajax({
-		url:`${moodleApi}mod/attendance/view.php`,
-		method: 'get',
-		dataType: 'html',
-		data: {
-			id: localStorage["attendanceId"],
-			mode: 2,
-			view: 5,
-            sesscourses: "all"
-		},
-		success: data => {
-			let word = "attendance.php?";
-			let all = getAllIndexes(data, word);
-			let link = "";
-			if(all[0]){
-				all.forEach(currentValue => {
-					for(let i = currentValue; data[i] != `"`; i++){
-						link += data[i];
-					}
-					log(link);
-					setAttendance(link);
-					link = "";
-				});
-			}else{
-				log("Нет доступных полей для отметки посещения.");
+    const url = `${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`;
+    const options = {
+        method: 'GET'
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error('Fetch error: Failed to updateAttendanceList.');
+    }
+    const data = await response.text();
+
+    const word = "attendance.php?";
+	const all = getAllIndexes(data, word);
+	let link = "";
+	if(all[0]){
+		all.forEach(currentValue => {
+			for(let i = currentValue; data[i] != `"`; i++){
+				link += data[i];
 			}
-		}
-	});
+			log(link);
+			setAttendance(link);
+			link = "";
+		});
+	}else{
+		log("Нет доступных полей для отметки посещения.");
+	}
 }
 
-function setAttendance(link) {
-	let fullLink = `${moodleApi}mod/attendance/${link}`;
-
-	$.ajax({
-		url: fullLink,
-		method: 'get',
-		dataType: 'html',
-		success: data => {
-            if(data.includes(`Сохранить`)) {
-                const doc = parseDOM(data);
-
-                let vars = doc.getElementsByClassName("statusdesc");
-                let sessid, sesskey, status;
-
-                for(let i = 0; i < vars.length; i++){
-                    if(vars[i].innerHTML == "Присутствовал" || vars[i].innerHTML == "Присутній"){
-                        status = vars[i].parentElement.firstElementChild.value
-                    }
-                }
-
-                if(status) {
-                    sessid = getQueryVariable(link, "sessid");
-                    sesskey = getQueryVariable(link, "sesskey");
-
-                    $.ajax({
-                        url: fullLink,
-                        method: 'post',
-                        data: {
-                            sessid: sessid,
-                            sesskey: sesskey,
-                            _qf_mod_attendance_form_studentattendance: 1,
-                            mform_isexpanded_id_session: 1,
-                            status: status,
-                            submitbutton: 'Сохранить'
-                        },
-                        success: data => {
-                            sendAttendanceMail(fullLink);
-                            log("Посещение отмечено. (adv)");
-                        }
-                    });
-                }
-            } else {
-                sendAttendanceMail(fullLink);
-                log("Посещение отмечено.");
-            }
-		}
-	});
-}
-
-function sendAttendanceMail(link) {
-    let mail = localStorage["email"];
-
-    if(localStorage["visitNotify"] != 'true' || !mail || mail === undefined)
-        return;
-
-    if(!localStorage["userId"]) {
-        localStorage["userId"] = getUserId();
+async function setAttendance(link) {
+    const url = `${moodleApi}mod/attendance/${link}`;
+    const options = {
+        method: 'GET'
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        throw new Error('Fetch error: Failed to setAttendance.');
     }
+    const data = await response.text();
 
-	$.ajax({
-		url: `${XDLApi}mail/`,
-		method: 'post',
-		dataType: 'html',
-		data: {
-			e: mail,
-			l: link,
-            s: localStorage["session"],
-            u: localStorage["userId"],
-            h: genHash(mail, link, localStorage["session"], localStorage["userId"])
-		},
-		success: data => {
-			log(`Запрос об отправке письма на почту ${mail} отправлен. Ответ: ${data}`);
-		}
-	});
+    if(data.includes(`Сохранить`)) {
+        const words = ["Присутствовал", "Присутній"];
+        let status = "";
+
+        words.forEach(word => {
+            const index = data.indexOf(word);
+            if(index == -1)
+                return;
+
+            for(let i = index; i < data.length; i--) {
+                let sub = data.substring(i, index);
+                console.log(sub)
+                if(sub.includes("value")) {
+                    i += 7;
+                    for(let j = i; j < data.length; j++) {
+                        if(isNaN(Number(data[j]))) 
+                            break;
+                        status += data[j];
+                    }
+                    status = Number(status);
+                    break;
+                }
+            }
+        });
+
+        log(`setAttendance (adv) status ${status}`);
+
+        if(status && status != 0) {
+            let sessid, sesskey;
+            sessid = getQueryVariable(link, "sessid");
+            sesskey = getQueryVariable(link, "sesskey");
+
+            const reqData = {
+                data: {
+                    sessid: sessid,
+                    sesskey: sesskey,
+                    _qf_mod_attendance_form_studentattendance: 1,
+                    mform_isexpanded_id_session: 1,
+                    status: status,
+                    submitbutton: 'Сохранить'
+                }
+            }
+            const aoptions = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: JSON.stringify(reqData)
+            };
+            const aresponse = await fetch(url, aoptions);
+            if (!aresponse.ok) {
+                throw new Error('Fetch error: Failed to setAttendance.');
+            }
+            const adata = await aresponse.text();
+
+            sendAttendanceMail(url);
+            log(`Посещение отмечено. (adv) Data: ${adata}`);
+        }
+    } else {
+        sendAttendanceMail(url);
+        log("Посещение отмечено.");
+    }
+}
+
+async function sendAttendanceMail(link) {
+    try {
+        const localStorage = await getValue(null);
+    
+        if(localStorage["visitNotify"] != 'true')
+            return;
+
+        if(!localStorage["mail"] || localStorage["mail"] === undefined || !localStorage["session"]) {
+            log(`Not enough data to send mail.`);
+            return;
+        }
+    
+        if(!localStorage["userId"]) {
+            localStorage["userId"] = getUserId();
+        }
+    
+        const url = `${XDLApi}mail/`;
+        const body = new FormData();
+        body.append('e', localStorage["mail"]);
+        body.append('l', link);
+        body.append('s', localStorage["session"]);
+        body.append('u', localStorage["userId"]);
+        body.append('h', genHash(localStorage["mail"], link, localStorage["session"], localStorage["userId"]));
+
+        const options = {
+            method: 'POST',
+            body: body
+        };
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error('Fetch error: Failed to sendAttendanceMail.');
+        }
+        const data = await response.text();
+    
+        log(`Запрос об отправке письма на почту ${localStorage["mail"]} отправлен. Ответ: ${data}`);
+    } catch (err) {
+        log(`Failed to sendAttendanceMail: ${err}`);
+    }
 }
 
 function genHash() {
@@ -408,12 +475,7 @@ function genHash() {
     for(let i = 0; i < arguments.length; i++) {
         h += arguments[i];
     }
-    return $.md5(h);
-}
-
-function parseDOM(html) {
-    const parser = new DOMParser();
-    return parser.parseFromString(html, 'text/html');
+    return crypt(h);
 }
 
 function getAllIndexes(arr, val) {
@@ -435,13 +497,6 @@ function getQueryVariable(link, variable) {
     }
     return null;
 }
-
-
-main();
-async function main() {
-    
-}
-
 
 function setValue(name, value) {
     let values = {};
@@ -488,15 +543,16 @@ function clearStorage() {
 
 async function onMessage(request, sender, sendResponse) {
     if (request.greeting == "saveSettings") {
-        let localStotage = {};
+        let localStorage = {};
         let lsBackup = await getValue(null);
         let isOffline = false;
 
         for (let key in request.settings) {
             await setValue(key, request.settings[key]);
-            localStotage[key] = request.settings[key];
+            localStorage[key] = request.settings[key];
         }
 
+        console.log(localStorage);
         if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
             stopAutoAttendanceThread();
             startAutoAttendanceThread();
@@ -518,8 +574,8 @@ async function onMessage(request, sender, sendResponse) {
         }
 
         if(!isOffline) {
-            sendResponse({animate: true});
-            setOnlineFunctions();
+            //sendResponse({animate: true});
+            //setOnlineFunctions();
         }
 
         sendResponse({farewell: "✔️ Сохранено"});
@@ -527,7 +583,7 @@ async function onMessage(request, sender, sendResponse) {
 
     if (request.greeting == "getSettings") {
         const settings = await getValue(null);
-        sendResponse({settings: localStorage});
+        sendResponse({settings: settings});
         return true;
     }
 
