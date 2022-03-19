@@ -5,19 +5,7 @@ log("Background.js loading...");
 
 importScripts('crypt.js');
 chrome.runtime.onMessage.addListener(onMessage);
-
-/*let extendOnlineThread;
-let autoAttendanceThread;
-
-const attendanceTimeoutGl = await getValue("attendanceTimeout");
-if(!attendanceTimeoutGl) {
-    await setValue("attendanceTimeout", 5);
-}
-
-const emailGl = await getValue("email");
-if(!emailGl) {
-    await setValue("email", "");
-}*/
+chrome.alarms.onAlarm.addListener(onAlarm);
 
 Main();
 
@@ -29,14 +17,21 @@ async function Main(sesskey = false) {
             sesskey = await obtainSesskey();
             await setValue("sesskey", sesskey);
         }
-        
+
         const localStorage = await getValue(null);
         if(!localStorage || !localStorage["sesskey"] || localStorage["sesskey"] == 'undefined')
             return;
+
+        if(!localStorage["attendanceTimeout"]) {
+            await setValue("attendanceTimeout", 5);
+        }
+
+        if(!localStorage["email"]) {
+            await setValue("email", "");
+        }
         
         console.log(localStorage);
 
-        /*
         updateAttendanceId();
     
         stopAutoAttendanceThread();
@@ -46,7 +41,7 @@ async function Main(sesskey = false) {
     
         if(localStorage["sExtendOnline"] == 'true' && localStorage["sAutoAttendance"] == 'true') {
             setOnlineFunctions();
-        }*/
+        }
     } catch (err) {
         log(`Error in main: ${err}`);
     }
@@ -85,28 +80,31 @@ function log(msg, err = false) {
         console.log(msg);
 }
 
-function startAutoAttendanceThread() {
-    if(localStorage["autoAttendance"] === 'true') {
+async function startAutoAttendanceThread() {
+    const autoAttendance = await getValue("autoAttendance");
+    const attendanceTimeout = await getValue("attendanceTimeout");
+    if(autoAttendance == true) {
         log(`AutoAttendance thread started.`);
         updateAttendanceList();
-        autoAttendanceThread = setInterval(updateAttendanceList, localStorage["attendanceTimeout"] * 60 * 1000);
+        chrome.alarms.create("autoAttendanceThread", {delayInMinutes: 0.1, periodInMinutes: attendanceTimeout} );
     }
 }
 
-function startExtendOnlineThread() {
-    if(localStorage["extendOnline"] === 'true') {
+async function startExtendOnlineThread() {
+    const extendOnline = await getValue("extendOnline");
+    if(extendOnline == true) {
         log(`ExtendOnline thread started.`);
-        extendOnlineThread = setInterval(extendLoginTimeout, 5 * 60 * 1000);
+        chrome.alarms.create("extendOnlineThread", {delayInMinutes: 0.1, periodInMinutes: 5});
     }
 }
 
 function stopAutoAttendanceThread() {
-    clearInterval(autoAttendanceThread);
+    chrome.alarms.clear("autoAttendanceThread");
     log(`AutoAttendance thread stopped.`);
 }
 
 function stopExtendOnlineThread() {
-    clearInterval(extendOnlineThread);
+    chrome.alarms.clear("extendOnlineThread");
     log(`ExtendOnline thread stopped.`);
 }
 
@@ -167,31 +165,34 @@ async function sendLoginState() {
     }
 }
 
-function setOnlineFunctions() {
-    let formData = new FormData();
+async function setOnlineFunctions() {
+    const localStorage = await getValue(null);
+    const formData = new FormData();
     let h = "";
+
     for(key in localStorage) {
         if(key == 'length') break;
         formData.append(key, localStorage[key]);
         h += localStorage[key];
     }
-    formData.append("h", $.md5(h));
-    
-    $.ajax({
-		url:`${XDLApi}runner/`,
-		method: 'post',
-        data: formData,
-        processData: false,
-        contentType: false,
-		success: data => {
-            log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
-            chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
-		},
-        error: err => {
-            log(`Не удалось отправить запрос онлайн функций.`);
-            chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
-        }
-	});
+
+    formData.append("h", crypt(h));
+
+    const url = `${XDLApi}runner/`;
+    const options = {
+        method: 'POST',
+        body: formData
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        log(`Не удалось отправить запрос онлайн функций.`);
+        chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
+        throw new Error('Fetch error: Failed to get AttendanceId.');
+    }
+    const data = await response.text();
+
+    log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
+    chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
 }
 
 async function getAttendanceId(courseId) {
@@ -498,9 +499,14 @@ function getQueryVariable(link, variable) {
     return null;
 }
 
-function setValue(name, value) {
+function setValue(name, value, isGlobal = false) {
     let values = {};
-    values[name] = value;
+    if(!isGlobal) {
+        values[name] = value;
+    } else {
+        values = value;
+    }
+    
     return new Promise((resolve, reject) => {
         chrome.storage.sync.set(values, function() {
             if (chrome.runtime.lastError) {
@@ -540,90 +546,119 @@ function clearStorage() {
     });
 }
 
+async function onAlarm(alarm) {
+    if(alarm.name == "autoAttendanceThread") {
+        updateAttendanceList();
+    }
 
-async function onMessage(request, sender, sendResponse) {
+    if(alarm.name == "extendOnlineThread") {
+        extendLoginTimeout();
+    }
+}
+
+function onMessage(request, sender, sendResponse) {
     if (request.greeting == "saveSettings") {
         let localStorage = {};
-        let lsBackup = await getValue(null);
-        let isOffline = false;
+        getValue(null).then(lsBackup => {
+            let isOffline = false;
 
-        for (let key in request.settings) {
-            await setValue(key, request.settings[key]);
-            localStorage[key] = request.settings[key];
-        }
+            for (let key in request.settings) {
+                localStorage[key] = request.settings[key];
+            }
+            setValue(null, localStorage, true);
+    
+            if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
+                stopAutoAttendanceThread();
+                startAutoAttendanceThread();
+                isOffline = true;
+            }
+    
+            if(lsBackup["extendOnline"] != localStorage["extendOnline"]) {
+                stopExtendOnlineThread();
+                startExtendOnlineThread();
+                isOffline = true;
+            }
+    
+            if(lsBackup["darkMode"] != localStorage["darkMode"]) {
+                try {
+                    chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+                        const tabId = tabs[0].id;
+                        const darkMode = await getValue("darkMode");
+                        chrome.tabs.sendMessage(tabId, {greeting: "setDarkMode", dark: darkMode}, (resp) => {
+                            const lastError = chrome.runtime.lastError;
+                            if(lastError) {
+                                log(lastError.message);
+                                return;
+                            }
+                        });
+                    });
+                    isOffline = true;
+                } catch (err) {
+                    console.log(`Error while sending message on the tab: ${err}`);
+                }
+                return true;
+            }
+    
+            if(!isOffline) {
+                sendResponse({animate: true});
+                setOnlineFunctions();
+            }
+    
+            sendResponse({farewell: "✔️ Сохранено"});
+        });
 
-        console.log(localStorage);
-        if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
-            stopAutoAttendanceThread();
-            startAutoAttendanceThread();
-            isOffline = true;
-        }
-
-        if(lsBackup["extendOnline"] != localStorage["extendOnline"]) {
-            stopExtendOnlineThread();
-            startExtendOnlineThread();
-            isOffline = true;
-        }
-
-        if(lsBackup["darkMode"] != localStorage["darkMode"]) {
-            chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
-                const tabId = tabs[0].id;
-                chrome.tabs.sendMessage(tabId, {greeting: "setDarkMode", dark: localStorage["darkMode"]});
-            });
-            isOffline = true;
-        }
-
-        if(!isOffline) {
-            //sendResponse({animate: true});
-            //setOnlineFunctions();
-        }
-
-        sendResponse({farewell: "✔️ Сохранено"});
+        return true;
     }
 
     if (request.greeting == "getSettings") {
-        const settings = await getValue(null);
-        sendResponse({settings: settings});
+        getValue(null).then(settings => {
+            sendResponse({settings: settings})
+        });
         return true;
     }
 
     if (request.greeting == "saveEmail") {
-        await setValue("email", request.email)
-        sendResponse({farewell: "OK"});
+        setValue("email", request.email).then(() => {
+            sendResponse({farewell: "OK"});
+        });
         return true;
     }
 
     if (request.greeting == "saveAttendanceTimeout") {
-        await setValue("attendanceTimeout", request.timeout)
-        sendResponse({farewell: "OK"});
+        setValue("attendanceTimeout", request.timeout).then(() => {
+            sendResponse({farewell: "OK"});
+        });
         return true;
     }
 
     if (request.greeting == "saveAuth") {
         if(request.auth && request.auth.sesskey && request.auth.session) {
-            const sesskey = await getValue("sesskey");
-            if(sesskey != request.auth.sesskey) {
-                sesskey = request.auth.sesskey;
-                log(`Received new session key: ${sesskey}`);
-                Main();
-            }
+            getValue("sesskey").then(sesskey => {
+                if(sesskey != request.auth.sesskey) {
+                    setValue("sesskey", request.auth.sesskey);
+                    log(`Received new session key: ${request.auth.sesskey}`);
+                    Main();
+                }
+            });
 
-            const session = await getValue("session");
-            if(session != request.auth.session) {
-                session = request.auth.session;
-                log(`Received new session: ${session}`);
-            }
+            getValue("session").then(session => {
+                if(session != request.auth.session) {
+                    setValue("session", request.auth.session);
+                    log(`Received new session: ${request.auth.session}`);
+                }
+            });
 
             sendResponse({farewell: "OK"});
-            return true;
         } else {
             sendResponse({farewell: "FAIL"});
         }
+        return true;
     }
 
     if (request.greeting == "checkLoginState") {
         sendLoginState();
     }
+    return true;
 }
 
 /* FUNCTIONS */

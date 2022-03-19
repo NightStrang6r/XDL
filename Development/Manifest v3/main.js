@@ -14,11 +14,14 @@ async function main() {
     if(settings && (settings.darkMode == 'true' || settings.darkMode == true)) {
         setDarkMode(true);
     }
+
+    log(`>XDL: Local settings:`);
+    log(settings);
     
     settings = await getSettings();
     saveLocalSettings(settings);
 
-    log(`>XDL: Settings loaded:`);
+    log(`>XDL: Settings loaded from background:`);
     log(settings);
 }
 
@@ -128,7 +131,7 @@ function getCookie(name) {
 
 function onMessage(request, sender, sendResponse) {
     if (request.greeting == "setDarkMode") {
-        if(request.dark == 'true') {
+        if(request.dark == true) {
             settings.darkMode = true;
             setDarkMode(true);
         } else {
@@ -137,5 +140,6 @@ function onMessage(request, sender, sendResponse) {
         }
         saveLocalSettings(settings);
     }
+    sendResponse({farewell: "OK"});
 }
 /* FUNCTIONS */
