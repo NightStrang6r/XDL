@@ -41,9 +41,10 @@ donationMenu.addEventListener("click", () => openTab("https://www.donationalerts
 function restoreSettings(){
     chrome.runtime.sendMessage({greeting: "getSettings"},
         function (response) {
+            console.log(response);
             settings = response.settings;
             for(let i = 0; i < checkboxes.length; i++){
-                if(settings[`${checkboxes[i].name}`] == "true"){
+                if(settings[`${checkboxes[i].name}`] == true){
                     checkboxes[i].checked = true;
                 } else {
                     checkboxes[i].checked = false;
@@ -193,12 +194,14 @@ function loadingAnimationUI(stop = false) {
 function onMessage(request, sender, sendResponse) {
     if (request.greeting == "setLoginState") {
         setLoginState(request.state);
+        sendResponse({farewell: "OK"});
         return;
     }
 
     if (request.greeting == "setLoading") {
         loadingAnimationUI(true);
         msgUI(request);
+        sendResponse({farewell: "OK"});
         return;
     }
 }

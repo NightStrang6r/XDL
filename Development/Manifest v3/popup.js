@@ -194,12 +194,14 @@ function loadingAnimationUI(stop = false) {
 function onMessage(request, sender, sendResponse) {
     if (request.greeting == "setLoginState") {
         setLoginState(request.state);
+        sendResponse({farewell: "OK"});
         return;
     }
 
     if (request.greeting == "setLoading") {
         loadingAnimationUI(true);
         msgUI(request);
+        sendResponse({farewell: "OK"});
         return;
     }
 }
