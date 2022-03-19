@@ -150,13 +150,12 @@ async function updateAttendanceId() {
 
 async function sendLoginState() {
     try {
-        const sesskey = await obtainSesskey();
+        const auth = await extendLoginTimeout();
 
         let state = false;
-        if(sesskey && sesskey != undefined) {
+        if(auth && !auth[0].error) {
             state = true;
-        } else {
-            state = false;
+            log(`User is authorized`);
         }
         chrome.runtime.sendMessage({greeting: "setLoginState", state: state});
     } catch(err) {
@@ -317,6 +316,8 @@ async function extendLoginTimeout() {
         } else {
             log(`Failed to extendLoginTimeout: response error`);
         }
+
+        return data;
     } catch (err) {
         log(`Failed to extendLoginTimeout: ${err}`);
     }
