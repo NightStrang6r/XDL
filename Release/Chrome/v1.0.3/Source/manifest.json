@@ -27,7 +27,6 @@
     ],
     "permissions": [
         "storage",
-        "tabs",
         "alarms"
     ],
     "content_security_policy": {
