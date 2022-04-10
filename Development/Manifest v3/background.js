@@ -39,8 +39,8 @@ async function Main(sesskey = false) {
         startAutoAttendanceThread();
         startExtendOnlineThread();
     
-        if(localStorage["sExtendOnline"] == 'true' && localStorage["sAutoAttendance"] == 'true') {
-            setOnlineFunctions();
+        if(localStorage["sExtendOnline"] == true && localStorage["sAutoAttendance"] == true) {
+            setOnlineFunctions(false);
         }
     } catch (err) {
         log(`Error in main: ${err}`);
@@ -164,7 +164,7 @@ async function sendLoginState() {
     }
 }
 
-async function setOnlineFunctions() {
+async function setOnlineFunctions(enableRequest = true) {
     const localStorage = await getValue(null);
     const formData = new FormData();
     let h = "";
@@ -185,13 +185,15 @@ async function setOnlineFunctions() {
     const response = await fetch(url, options);
     if (!response.ok) {
         log(`Не удалось отправить запрос онлайн функций.`);
-        chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
+        if(enableRequest)
+            chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
         throw new Error('Fetch error: Failed to get AttendanceId.');
     }
     const data = await response.text();
 
     log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
-    chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
+    if(enableRequest)
+        chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
 }
 
 async function getAttendanceId(courseId) {
