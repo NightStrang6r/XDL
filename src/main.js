@@ -142,4 +142,5 @@ function onMessage(request, sender, sendResponse) {
     }
     sendResponse({farewell: "OK"});
 }
+
 /* FUNCTIONS */
