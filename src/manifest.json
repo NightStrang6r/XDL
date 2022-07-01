@@ -4,13 +4,13 @@
     "author": "NightStranger",
     "description": "Помощник для платформы дистанционного обучения DL.NURE",
     "version": "1.0.4",
-    "icons": {"64": "logo.png"},
+    "icons": {"64": "assets/logo.png"},
     "action": {
-        "default_icon": "logo.png",
-        "default_popup": "popup.html"
+        "default_icon": "assets/logo.png",
+        "default_popup": "popup/popup.html"
     },
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "background/index.js"
     },
     "content_scripts": [
         {
@@ -19,8 +19,8 @@
                 "https://dl.nure.ua/*"
             ],
             "js": [
-                "jquery-3.6.0.min.js",
-                "main.js"
+                "lib/jquery-3.6.0.min.js",
+                "content/main.js"
             ],
             "run_at": "document_start"
         }
