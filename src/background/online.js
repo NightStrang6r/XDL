@@ -1,3 +1,5 @@
+importScripts('../lib/crypt.js');
+
 class Online {
     constructor() {
         this.storage = new Storage();
@@ -83,6 +85,6 @@ class Online {
         for(let i = 0; i < arguments.length; i++) {
             h += arguments[i];
         }
-        return this.crypt(h);
+        return crypt(h);
     }
 }

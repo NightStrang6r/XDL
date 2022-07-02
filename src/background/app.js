@@ -3,7 +3,7 @@ const XDLApi ='https://xdl.leoit.dev/';
 
 class App {
     constructor() {
-        importScripts('../lib/crypt.js');
+        importScripts('../lib/dark.js');
 
         this.logger = new Logger();
         this.storage = new Storage();
@@ -111,107 +111,119 @@ class App {
     }
     
     onMessage(request, sender, sendResponse) {
-        if (request.greeting == "saveSettings") {
-            let localStorage = {};
-            this.storage.getValue(null).then(lsBackup => {
-                let isOffline = false;
-    
-                for (let key in request.settings) {
-                    localStorage[key] = request.settings[key];
-                }
-                this.storage.setValue(null, localStorage, true);
-        
-                if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
-                    this.stopAutoAttendanceThread();
-                    this.startAutoAttendanceThread();
-                    isOffline = true;
-                }
-        
-                if(lsBackup["extendOnline"] != localStorage["extendOnline"]) {
-                    this.stopExtendOnlineThread();
-                    this.startExtendOnlineThread();
-                    isOffline = true;
-                }
-        
-                if(lsBackup["darkMode"] != localStorage["darkMode"]) {
-                    try {
-                        chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
-                            const tabId = tabs[0].id;
-                            const darkMode = await this.storage.getValue("darkMode");
-                            chrome.tabs.sendMessage(tabId, {greeting: "setDarkMode", dark: darkMode}, (resp) => {
-                                const lastError = chrome.runtime.lastError;
-                                if(lastError) {
-                                    this.logger.log(lastError.message);
-                                    return;
-                                }
-                            });
-                        });
-                        isOffline = true;
-                    } catch (err) {
-                        console.log(`Error while sending message on the tab: ${err}`);
-                    }
-                    return true;
-                }
-        
-                if(!isOffline) {
-                    sendResponse({animate: true});
-                    this.online.setOnlineFunctions();
-                }
-        
-                sendResponse({farewell: "✔️ Сохранено"});
-            });
-    
-            return true;
+        switch(request.greeting) {
+            case 'saveSettings': this.saveSettings(request, sendResponse); break;
+            case 'getSettings': this.getSettings(request, sendResponse); break;
+            case 'saveEmail': this.saveEmail(request, sendResponse); break;
+            case 'saveAttendanceTimeout': this.saveAttendanceTimeout(request, sendResponse); break;
+            case 'saveAuth': this.saveAuth(request, sendResponse); break;
+            case 'checkLoginState': this.checkLoginState(request, sendResponse); break;
         }
     
-        if (request.greeting == "getSettings") {
-            this.storage.getValue(null).then(settings => {
-                sendResponse({settings: settings})
-            });
-            return true;
-        }
-    
-        if (request.greeting == "saveEmail") {
-            this.storage.setValue("email", request.email).then(() => {
-                sendResponse({farewell: "OK"});
-            });
-            return true;
-        }
-    
-        if (request.greeting == "saveAttendanceTimeout") {
-            this.storage.setValue("attendanceTimeout", request.timeout).then(() => {
-                sendResponse({farewell: "OK"});
-            });
-            return true;
-        }
-    
-        if (request.greeting == "saveAuth") {
-            if(request.auth && request.auth.sesskey && request.auth.session) {
-                this.storage.getValue("sesskey").then(sesskey => {
-                    if(sesskey != request.auth.sesskey) {
-                        setValue("sesskey", request.auth.sesskey);
-                        this.logger.log(`Received new session key: ${request.auth.sesskey}`);
-                        this.run();
-                    }
-                });
-    
-                this.storage.getValue("session").then(session => {
-                    if(session != request.auth.session) {
-                        setValue("session", request.auth.session);
-                        this.logger.log(`Received new session: ${request.auth.session}`);
-                    }
-                });
-    
-                sendResponse({farewell: "OK"});
-            } else {
-                sendResponse({farewell: "FAIL"});
-            }
-            return true;
-        }
-    
-        if (request.greeting == "checkLoginState") {
-            this.sendLoginState();
-        }
         return true;
+    }
+
+    saveSettings(request, sendResponse) {
+        let localStorage = {};
+
+        this.storage.getValue(null).then(lsBackup => {
+            let isOffline = false;
+
+            for (let key in request.settings) {
+                localStorage[key] = request.settings[key];
+            }
+            this.storage.setValue(null, localStorage, true);
+    
+            if(lsBackup["autoAttendance"] != localStorage["autoAttendance"]) {
+                this.stopAutoAttendanceThread();
+                this.startAutoAttendanceThread();
+                isOffline = true;
+            }
+    
+            if(lsBackup["extendOnline"] != localStorage["extendOnline"]) {
+                this.stopExtendOnlineThread();
+                this.startExtendOnlineThread();
+                isOffline = true;
+            }
+    
+            if(lsBackup["darkMode"] != localStorage["darkMode"]) {
+                try {
+                    chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+                        const tabId = tabs[0].id;
+                        const darkMode = await this.storage.getValue("darkMode");
+                        const message = {
+                            greeting: "setDarkMode", 
+                            dark: darkMode, 
+                            css: getDarkCSS()
+                        }
+
+                        chrome.tabs.sendMessage(tabId, message, (resp) => {
+                            const lastError = chrome.runtime.lastError;
+                            if(lastError) {
+                                this.logger.log(lastError.message);
+                                return;
+                            }
+                        });
+                    });
+                    
+                    isOffline = true;
+                } catch (err) {
+                    console.log(`Error while sending message on the tab: ${err}`);
+                }
+                return;
+            }
+    
+            if(!isOffline) {
+                sendResponse({animate: true});
+                this.online.setOnlineFunctions();
+            }
+    
+            sendResponse({farewell: "✔️ Сохранено"});
+        });
+    }
+
+    getSettings(request, sendResponse) {
+        this.storage.getValue(null).then(settings => {
+            sendResponse({settings: settings})
+        });
+    }
+
+    saveEmail(request, sendResponse) {
+        this.storage.setValue("email", request.email).then(() => {
+            sendResponse({farewell: "OK"});
+        });
+    }
+
+    saveAttendanceTimeout(request, sendResponse) {
+        this.storage.setValue("attendanceTimeout", request.timeout).then(() => {
+            sendResponse({farewell: "OK"});
+        });
+    }
+
+    saveAuth(request, sendResponse) {
+        if(request.auth && request.auth.sesskey && request.auth.session) {
+            this.storage.getValue("sesskey").then(sesskey => {
+                if(sesskey != request.auth.sesskey) {
+                    this.storage.setValue("sesskey", request.auth.sesskey);
+                    this.logger.log(`Received new session key: ${request.auth.sesskey}`);
+                    this.run();
+                }
+            });
+
+            this.storage.getValue("session").then(session => {
+                if(session != request.auth.session) {
+                    this.storage.setValue("session", request.auth.session);
+                    this.logger.log(`Received new session: ${request.auth.session}`);
+                }
+            });
+
+            sendResponse({farewell: "OK"});
+        } else {
+            sendResponse({farewell: "FAIL"});
+        }
+    }
+
+    checkLoginState(request, sendResponse) {
+        this.sendLoginState();
     }
 }
