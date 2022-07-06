@@ -1,10 +1,12 @@
+const XDLApi ='https://xdl.leoit.dev/';
+
 export default class Popup {
     constructor() {
         this.menu = document.getElementById("menu");
         this.checkboxes = document.getElementsByClassName("custom-checkbox");
         this.loginButton = document.getElementById("login-button");
         this.emailButton = document.getElementById("email-button");
-        this.emaitInput = document.getElementById("email-input");
+        this.telegramButton = document.getElementById("telegram-button");
         this.settingsButton = document.getElementById("settings-button");
         this.attendanceTimeout = document.getElementById("attendance-timeout");
         
@@ -36,7 +38,7 @@ export default class Popup {
         this.menu.addEventListener("click", () => this.showMenuUI());
         this.loginButton.addEventListener("click", () => this.openTab("https://dl.nure.ua/login/"));
         this.emailButton.addEventListener("click", () => this.updateEmailInput());
-        this.emaitInput.addEventListener("input", () => this.saveEmailInput());
+        this.telegramButton.addEventListener("click", () => this.onTelegramButton());
         this.settingsMenu.addEventListener("click", () => this.viewSettingsUI(true));
         this.settingsButton.addEventListener("click", () => this.viewSettingsUI(false));
         this.attendanceTimeout.addEventListener("input", () => this.saveAttendanceTimeoutInput());
@@ -59,15 +61,13 @@ export default class Popup {
         for(let i = 0; i < this.checkboxes.length; i++) {
             if(this.settings[`${this.checkboxes[i].name}`] == true) {
                 this.checkboxes[i].checked = true;
-                console.log(true);
             } else {
                 this.checkboxes[i].checked = false;
-                console.log(false);
             }
         }
-
-        this.emaitInput.value = settings["email"];
-        this.attendanceTimeout.value = settings["attendanceTimeout"];
+        
+        this.setTelegramButton();
+        this.attendanceTimeout.value = this.settings["attendanceTimeout"];
     }
     
     sendLoginStateRequest() {
@@ -90,21 +90,12 @@ export default class Popup {
         for(let i = 0; i < this.checkboxes.length; i++) {
             this.settings[this.checkboxes[i].name] = this.checkboxes[i].checked;
         }
-
-        if(this.emaitInput.value === undefined) {
-            this.settings["email"] = this.emaitInput.value;
-        }
     
         if(el.srcElement.name == "visitNotify" && el.srcElement.checked == true) {
             this.updateEmailInput();
         }
     
         chrome.runtime.sendMessage({greeting: "saveSettings", settings: this.settings}, (response) => this.msgUI(response));
-    }
-     
-    saveEmailInput() {
-        let input = this.emaitInput.value;
-        chrome.runtime.sendMessage({greeting: "saveEmail", email: input});
     }
     
     saveAttendanceTimeoutInput() {
@@ -204,6 +195,19 @@ export default class Popup {
 
         document.getElementById("res").innerHTML = f[Math.floor((Date.now()/100)%f.length)];
         this.msgUITimeout = setTimeout(() => (this.loopAnimationUI()), 50);
+    }
+
+    setTelegramButton() {
+        console.log(this.settings);
+        if(this.settings.telegram == true) {
+            this.telegramButton.innerHTML = 'Отключить';
+            this.telegramButton.style.backgroundColor = 'green';
+        }
+    }
+
+    onTelegramButton() {
+        const url = XDLApi + 'notify/subscribe?telegram=1' + '&userId=' + this.settings.userId + '&session=' + this.settings.session + '&sesskey=' + this.settings.sesskey;
+        this.openTab(url);
     }
     
     onMessage(request, sender, sendResponse) {

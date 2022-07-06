@@ -46,8 +46,8 @@ class App {
             this.startAutoAttendanceThread();
             this.startExtendOnlineThread();
         
-            if(localStorage["sExtendOnline"] == true && localStorage["sAutoAttendance"] == true) {
-                this.setOnlineFunctions(false);
+            if(localStorage["sExtendOnline"] == true || localStorage["sAutoAttendance"] == true) {
+                this.online.setOnlineFunctions(false);
             }
 
             this.logger.log("Background.js loaded.");

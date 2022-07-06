@@ -8,36 +8,51 @@ class Online {
     }
 
     async setOnlineFunctions(enableRequest = true) {
-        const localStorage = await this.storage.getValue(null);
-        const formData = new FormData();
-        let h = "";
+        try {
+            const localStorage = await this.storage.getValue(null);
+            const formData = new URLSearchParams();
+            let h = "";
+        
+            for(let key in localStorage) {
+                if(key == 'length') break;
+                formData.append(key, localStorage[key]);
+                h += localStorage[key];
+            }
+        
+            formData.append("h", crypt(h));
+        
+            const url = `${XDLApi}runner/`;
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                body: formData
+            };
+            const response = await fetch(url, options);
     
-        for(let key in localStorage) {
-            if(key == 'length') break;
-            formData.append(key, localStorage[key]);
-            h += localStorage[key];
-        }
+            if (!response.ok) {
+                this.logger.log(`Не удалось отправить запрос онлайн функций.`);
     
-        formData.append("h", crypt(h));
+                if(enableRequest)
+                    chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
+                
+                throw new Error('Fetch error: Failed to get AttendanceId.');
+            }
     
-        const url = `${XDLApi}runner/`;
-        const options = {
-            method: 'POST',
-            body: formData
-        };
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            this.logger.log(`Не удалось отправить запрос онлайн функций.`);
-            if(enableRequest)
-                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
-            throw new Error('Fetch error: Failed to get AttendanceId.');
-        }
-        const data = await response.text();
-    
-        this.logger.log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
+            let data = await response.text();
+        
+            this.logger.log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
 
-        if(enableRequest)
-            chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
+            data = JSON.parse(data);
+            if(data && (data.telegram == false || data.telegram == true))
+                await this.storage.setValue('telegram', data.telegram);
+    
+            if(enableRequest)
+                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
+        } catch (e) {
+            this.logger.log(`Failed to setOnlineFunctions: ${err}`);
+        }
     }
 
     async sendAttendanceMail(link) {

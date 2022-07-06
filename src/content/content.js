@@ -67,7 +67,7 @@ export default class Content {
                 return {session, sesskey};
             }
     
-            this.log(`>XDL: Successfully obtained auth: ${session}, ${sesskey}`);
+            this.log(`>XDL: Successfully obtained auth.`);
         } catch(err) {
             this.log(`>XDL: Failed to obtain auth. Error: ${err}`);
         }
