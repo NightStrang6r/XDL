@@ -7,36 +7,40 @@ class Attendance {
     }
 
     async updateAttendanceList() {
-        const attendanceId = await this.storage.getValue("attendanceId");
-        if(!attendanceId) {
-            this.logger.log(`Invalid attendanceId: ${attendanceId}. Can't updateAttendanceList`);
-            return;
-        }
-    
-        const url = `${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`;
-        const options = {
-            method: 'GET'
-        };
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            throw new Error('Fetch error: Failed to updateAttendanceList.');
-        }
-        const data = await response.text();
-    
-        const word = "attendance.php?";
-        const all = this.helper.getAllIndexes(data, word);
-        let link = "";
-        if(all[0]){
-            all.forEach(currentValue => {
-                for(let i = currentValue; data[i] != `"`; i++){
-                    link += data[i];
-                }
-                this.logger.log(link);
-                this.setAttendance(link);
-                link = "";
-            });
-        }else{
-            this.logger.log("Нет доступных полей для отметки посещения.");
+        try {
+            const attendanceId = await this.storage.getValue("attendanceId");
+            if(!attendanceId) {
+                this.logger.log(`Invalid attendanceId: ${attendanceId}. Can't updateAttendanceList`);
+                return;
+            }
+        
+            const url = `${moodleApi}mod/attendance/view.php?id=${attendanceId}&mode=2&view=5&sesscourses=all`;
+            const options = {
+                method: 'GET'
+            };
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error('Fetch error: Failed to updateAttendanceList.');
+            }
+            const data = await response.text();
+        
+            const word = "attendance.php?";
+            const all = this.helper.getAllIndexes(data, word);
+            let link = "";
+            if(all[0]){
+                all.forEach(currentValue => {
+                    for(let i = currentValue; data[i] != `"`; i++){
+                        link += data[i];
+                    }
+                    this.logger.log(link);
+                    this.setAttendance(link);
+                    link = "";
+                });
+            }else{
+                this.logger.log('There are no available fields to attend.');
+            }
+        } catch (err) {
+            this.logger.log(`Failed to updateAttendanceList: ${err}`);
         }
     }
 
@@ -62,7 +66,7 @@ class Attendance {
     
                 for(let i = index; i < data.length; i--) {
                     let sub = data.substring(i, index);
-                    console.log(sub)
+                    console.log(sub);
                     if(sub.includes("value")) {
                         i += 7;
                         for(let j = i; j < data.length; j++) {
@@ -107,11 +111,11 @@ class Attendance {
                 const adata = await aresponse.text();
     
                 this.online.sendAttendanceMail(url);
-                this.logger.log(`Посещение отмечено. (adv) Data: ${adata}`);
+                this.logger.log(`Attendance noted. (adv) Data: ${adata}`);
             }
         } else {
             this.online.sendAttendanceMail(url);
-            this.logger.log("Посещение отмечено.");
+            this.logger.log("Attendance noted.");
         }
     }
 }

@@ -38,10 +38,12 @@ img {
     border-bottom: 0.5px solid #dadada;
     /*свойства нижней разделительной линии*/
     height: 50px;
+    -webkit-user-select: none;
 }
 
 .modal-content {
     padding: 0 22px;
+    -webkit-user-select: none;
     /*отступы сверху и снизу, сверху и слева*/
 }
 
@@ -373,16 +375,17 @@ img {
 .notify-item {
     display: inline-flex;
     margin-left: 23px;
+    -webkit-user-select: none;
 }
 
 .telegram-icon {
     width: 18px;
     height: 18px;
+    pointer-events: none;
 }
 
 .telegram-text {
     margin-left: 6px;
-    -webkit-user-select: none;
 }
 
 .telegram-button-field {

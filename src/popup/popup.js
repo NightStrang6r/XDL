@@ -201,7 +201,7 @@ export default class Popup {
         console.log(this.settings);
         if(this.settings.telegram == true) {
             this.telegramButton.innerHTML = 'Отключить';
-            this.telegramButton.style.backgroundColor = 'green';
+            this.telegramButton.style.backgroundColor = '#68ad1b';
         }
     }
 

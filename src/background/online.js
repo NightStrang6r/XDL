@@ -50,7 +50,7 @@ class Online {
     
             if(enableRequest)
                 chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
-        } catch (e) {
+        } catch (err) {
             this.logger.log(`Failed to setOnlineFunctions: ${err}`);
         }
     }
