@@ -7,7 +7,7 @@ class Online {
         this.parser = new Parser();
     }
 
-    async setOnlineFunctions(enableRequest = true) {
+    async setOnlineFunctions(request = 'save') {
         try {
             const localStorage = await this.storage.getValue(null);
             const formData = new URLSearchParams();
@@ -34,24 +34,50 @@ class Online {
             if (!response.ok) {
                 this.logger.log(`Не удалось отправить запрос онлайн функций.`);
     
-                if(enableRequest)
+                if(request) {
                     chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
+                }
                 
                 throw new Error('Fetch error: Failed to get AttendanceId.');
             }
     
             let data = await response.text();
-        
             this.logger.log(`Запрос онлайн функций на сервер отправлен. Ответ: ${data}`);
 
             data = JSON.parse(data);
-            if(data && (data.telegram == false || data.telegram == true))
-                await this.storage.setValue('telegram', data.telegram);
+            const sync = await this.saveSyncData(data);
     
-            if(enableRequest)
-                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false});
+            if(request && request == 'save') {
+                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false, sync: sync});
+            } else if(request && request == 'sync') {
+                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Синхронизировано", animate: false, sync: sync});
+            }
         } catch (err) {
             this.logger.log(`Failed to setOnlineFunctions: ${err}`);
+        }
+    }
+
+    async saveSyncData(data) {
+        if(!data.sync) return false;
+
+        try {
+            const sync = data.sync;
+
+            if(sync.error) return false;
+
+            if(sync.telegramNotify == false || sync.telegramNotify == true)
+                await this.storage.setValue('telegramNotify', sync.telegramNotify);
+            
+            await this.storage.setValue('sAutoAttendance', sync.sAutoAttendance);
+            await this.storage.setValue('sExtendOnline', sync.sExtendOnline);
+            await this.storage.setValue('visitNotify', sync.visitNotify);
+            await this.storage.setValue('version', sync.version);
+            await this.storage.setValue('chromeWebStore', sync.chromeWebStore);
+
+            return sync;
+        } catch (err) {
+            this.logger.log(`Failed to saveSyncData: ${err}`);
+            return false;
         }
     }
 

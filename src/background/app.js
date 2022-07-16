@@ -118,6 +118,7 @@ class App {
             case 'saveAttendanceTimeout': this.saveAttendanceTimeout(request, sendResponse); break;
             case 'saveAuth': this.saveAuth(request, sendResponse); break;
             case 'checkLoginState': this.checkLoginState(request, sendResponse); break;
+            case 'sync': this.online.setOnlineFunctions('sync'); break;
         }
     
         return true;

@@ -9,6 +9,8 @@ export default class Popup {
         this.telegramButton = document.getElementById("telegram-button");
         this.settingsButton = document.getElementById("settings-button");
         this.attendanceTimeout = document.getElementById("attendance-timeout");
+        this.syncButton = document.getElementById("sync-button");
+        this.updateButton = document.getElementById("update-button");
         
         this.websiteMenu = document.getElementById("website-menu");
         this.telegramMenu = document.getElementById("telegram-menu");
@@ -42,10 +44,12 @@ export default class Popup {
         this.settingsMenu.addEventListener("click", () => this.viewSettingsUI(true));
         this.settingsButton.addEventListener("click", () => this.viewSettingsUI(false));
         this.attendanceTimeout.addEventListener("input", () => this.saveAttendanceTimeoutInput());
+        this.syncButton.addEventListener("click", () => this.onSyncButtonClick());
 
         this.websiteMenu.addEventListener("click", () => this.openTab("https://xdl.leoit.dev"));
         this.telegramMenu.addEventListener("click", () => this.openTab("https://t.me/+X3pPK2R2YFw2YmIy"));
         this.donationMenu.addEventListener("click", () => this.openTab("https://www.donationalerts.com/r/nightstranger"));
+        this.updateButton.addEventListener("click", () => this.openTab(this.settings.chromeWebStore))
     }
 
     restoreSettings() {
@@ -67,6 +71,7 @@ export default class Popup {
         }
         
         this.setTelegramButton();
+        this.setUpdateButton();
         this.attendanceTimeout.value = this.settings["attendanceTimeout"];
     }
     
@@ -197,17 +202,36 @@ export default class Popup {
         this.msgUITimeout = setTimeout(() => (this.loopAnimationUI()), 50);
     }
 
+    setUpdateButton() {
+        this.versionText = document.getElementById("header-version");
+        console.log(`v${this.settings.version} != ${this.versionText.innerHTML}`);
+        if(`v${this.settings.version}` != this.versionText.innerHTML) {
+            this.updateButton.style.visibility = 'visible';
+        }
+    }
+
     setTelegramButton() {
-        console.log(this.settings);
-        if(this.settings.telegram == true) {
+        if(this.settings.telegramNotify == true) {
             this.telegramButton.innerHTML = 'Отключить';
             this.telegramButton.style.backgroundColor = '#68ad1b';
+            this.telegramButton.dataset.subscribe = 'false';
         }
     }
 
     onTelegramButton() {
-        const url = XDLApi + 'notify/subscribe?telegram=1' + '&userId=' + this.settings.userId + '&session=' + this.settings.session + '&sesskey=' + this.settings.sesskey;
+        let subscribe = 'subscribe';
+
+        if(this.telegramButton.dataset.subscribe == 'false') {
+            subscribe = 'unsubscribe';
+        }
+
+        const url = XDLApi + 'notify/' + subscribe + '?telegram=1' + '&userId=' + this.settings.userId + '&session=' + this.settings.session + '&sesskey=' + this.settings.sesskey;
         this.openTab(url);
+    }
+
+    onSyncButtonClick() {
+        chrome.runtime.sendMessage({greeting: "sync"});
+        this.loadingAnimationUI();
     }
     
     onMessage(request, sender, sendResponse) {
@@ -220,6 +244,14 @@ export default class Popup {
         if (request.greeting == "setLoading") {
             this.loadingAnimationUI(true);
             this.msgUI(request);
+            sendResponse({farewell: "OK"});
+            return;
+        }
+
+        if (request.greeting == "sync") {
+            this.loadingAnimationUI(true);
+            this.msgUI(request);
+            this.restoreSettings();
             sendResponse({farewell: "OK"});
             return;
         }

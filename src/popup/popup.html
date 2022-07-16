@@ -14,7 +14,10 @@
         <h1 class="logo">
             <img class="logo-icon" src="../assets/logo.png">
             <span>XDL</span>
-            <span class="header-text">v1.0.5</span>
+            <span class="header-text" id="header-version">v1.0.5</span>
+            <div class="header-update">
+                <button class="button update-button" id="update-button">Обновить</button>
+            </div>
             <div class="header-text dropbtn">
                 <span id="menu">Menu</span>
             </div>
@@ -65,7 +68,7 @@
                 </div>
                 <div class="telegram-text">Telegram</div>
                 <div class="telegram-button-field">
-                    <button class="button telegram-button" id="telegram-button">Подключить</button>
+                    <button class="button telegram-button" id="telegram-button" data-subscribe="true">Подключить</button>
                 </div>
             </div>
         </div>
@@ -85,6 +88,9 @@
 
     <div class="modal-icons">
         <div class="flex-container">
+            <div class="">
+                <img class="button-icon" id="sync-button" src="../assets/reload.png" />
+            </div>
             <div class="right" id="res"></div>
         </div>
     </div>
