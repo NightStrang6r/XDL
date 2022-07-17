@@ -110,11 +110,11 @@ class Attendance {
                 }
                 const adata = await aresponse.text();
     
-                this.online.sendAttendanceMail(url);
+                this.online.sendAttendanceNotify(url);
                 this.logger.log(`Attendance noted. (adv) Data: ${adata}`);
             }
         } else {
-            this.online.sendAttendanceMail(url);
+            this.online.sendAttendanceNotify(url);
             this.logger.log("Attendance noted.");
         }
     }

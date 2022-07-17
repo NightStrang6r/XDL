@@ -32,10 +32,6 @@ class App {
             if(!localStorage["attendanceTimeout"]) {
                 await this.storage.setValue("attendanceTimeout", 5);
             }
-    
-            if(!localStorage["email"]) {
-                await this.storage.setValue("email", "");
-            }
             
             console.log(localStorage);
     
@@ -114,11 +110,11 @@ class App {
         switch(request.greeting) {
             case 'saveSettings': this.saveSettings(request, sendResponse); break;
             case 'getSettings': this.getSettings(request, sendResponse); break;
-            case 'saveEmail': this.saveEmail(request, sendResponse); break;
             case 'saveAttendanceTimeout': this.saveAttendanceTimeout(request, sendResponse); break;
             case 'saveAuth': this.saveAuth(request, sendResponse); break;
             case 'checkLoginState': this.checkLoginState(request, sendResponse); break;
             case 'sync': this.online.setOnlineFunctions('sync'); break;
+            case 'resetData': this.storage.clearStorage();
         }
     
         return true;
@@ -186,12 +182,6 @@ class App {
     getSettings(request, sendResponse) {
         this.storage.getValue(null).then(settings => {
             sendResponse({settings: settings})
-        });
-    }
-
-    saveEmail(request, sendResponse) {
-        this.storage.setValue("email", request.email).then(() => {
-            sendResponse({farewell: "OK"});
         });
     }
 

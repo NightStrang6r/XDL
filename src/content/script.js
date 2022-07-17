@@ -1,7 +1,6 @@
 async function importScripts(src) {
     const url = chrome.runtime.getURL(src);
     const contentMain = await import(url);
-    console.log(contentMain);
 }
 
 async function setDarkMode() {
@@ -18,7 +17,7 @@ async function sleep(timeout) {
     return new Promise(resolve => setTimeout(resolve, timeout));
 }
 
-if(localStorage["XDLDarkCSS"])
+if(localStorage["XDLDarkMode"] == true)
     setDarkMode();
     
 importScripts("content/index.js");

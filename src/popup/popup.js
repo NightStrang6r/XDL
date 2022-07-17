@@ -11,6 +11,7 @@ export default class Popup {
         this.attendanceTimeout = document.getElementById("attendance-timeout");
         this.syncButton = document.getElementById("sync-button");
         this.updateButton = document.getElementById("update-button");
+        this.resetButton = document.getElementById("reset-button");
         
         this.websiteMenu = document.getElementById("website-menu");
         this.telegramMenu = document.getElementById("telegram-menu");
@@ -45,6 +46,7 @@ export default class Popup {
         this.settingsButton.addEventListener("click", () => this.viewSettingsUI(false));
         this.attendanceTimeout.addEventListener("input", () => this.saveAttendanceTimeoutInput());
         this.syncButton.addEventListener("click", () => this.onSyncButtonClick());
+        this.resetButton.addEventListener("click", () => this.onResetButtonClick());
 
         this.websiteMenu.addEventListener("click", () => this.openTab("https://xdl.leoit.dev"));
         this.telegramMenu.addEventListener("click", () => this.openTab("https://t.me/+X3pPK2R2YFw2YmIy"));
@@ -59,6 +61,8 @@ export default class Popup {
     }
 
     restore(response) {
+        this.messageErrorHandler();
+
         this.settings = {...response.settings};
         console.log(this.settings);
 
@@ -76,7 +80,7 @@ export default class Popup {
     }
     
     sendLoginStateRequest() {
-        chrome.runtime.sendMessage({greeting: "checkLoginState"});
+        chrome.runtime.sendMessage({greeting: "checkLoginState"}, () => this.messageErrorHandler());
     }
     
     setLoginState(state) {
@@ -105,7 +109,7 @@ export default class Popup {
     
     saveAttendanceTimeoutInput() {
         let input = +this.attendanceTimeout.value;
-        chrome.runtime.sendMessage({greeting: "saveAttendanceTimeout", timeout: input});
+        chrome.runtime.sendMessage({greeting: "saveAttendanceTimeout", timeout: input}, () => this.messageErrorHandler());
     }
     
     msgUI(response) {
@@ -204,7 +208,7 @@ export default class Popup {
 
     setUpdateButton() {
         this.versionText = document.getElementById("header-version");
-        console.log(`v${this.settings.version} != ${this.versionText.innerHTML}`);
+
         if(`v${this.settings.version}` != this.versionText.innerHTML) {
             this.updateButton.style.visibility = 'visible';
         }
@@ -213,7 +217,7 @@ export default class Popup {
     setTelegramButton() {
         if(this.settings.telegramNotify == true) {
             this.telegramButton.innerHTML = 'Отключить';
-            this.telegramButton.style.backgroundColor = '#68ad1b';
+            this.telegramButton.classList.add('telegram-button-green');
             this.telegramButton.dataset.subscribe = 'false';
         }
     }
@@ -230,8 +234,13 @@ export default class Popup {
     }
 
     onSyncButtonClick() {
-        chrome.runtime.sendMessage({greeting: "sync"});
+        chrome.runtime.sendMessage({greeting: "sync"}, () => this.messageErrorHandler());
         this.loadingAnimationUI();
+    }
+
+    onResetButtonClick() {
+        chrome.runtime.sendMessage({greeting: "resetData"}, () => this.messageErrorHandler());
+        window.close();
     }
     
     onMessage(request, sender, sendResponse) {
@@ -253,6 +262,14 @@ export default class Popup {
             this.msgUI(request);
             this.restoreSettings();
             sendResponse({farewell: "OK"});
+            return;
+        }
+    }
+
+    messageErrorHandler() {
+        const lastError = chrome.runtime.lastError;
+        if(lastError) {
+            console.log(lastError.message);
             return;
         }
     }

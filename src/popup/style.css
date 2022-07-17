@@ -404,6 +404,14 @@ img {
     background-color: #076f92;
 }
 
+.telegram-button-green {
+    background-color: #68ad1b;
+}
+
+.telegram-button-green:hover {
+    background-color: #589117;
+}
+
 .button-icon {
     width: 22px;
     height: 22px;
@@ -420,4 +428,23 @@ img {
     padding: 1px 12px;
     border-radius: 12px;
     font-size: 14px;
+}
+
+.update-button:hover {
+    background-color: #076f92;
+}
+
+.reset-button-block {
+    margin-bottom: 1rem;
+}
+
+.reset-button {
+    background-color: #0aa1d5;
+    padding: 1px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.reset-button:hover {
+    background-color: #076f92;
 }

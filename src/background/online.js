@@ -35,7 +35,7 @@ class Online {
                 this.logger.log(`Не удалось отправить запрос онлайн функций.`);
     
                 if(request) {
-                    chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false});
+                    chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false}, () => this.messageErrorHandler());
                 }
                 
                 throw new Error('Fetch error: Failed to get AttendanceId.');
@@ -48,9 +48,23 @@ class Online {
             const sync = await this.saveSyncData(data);
     
             if(request && request == 'save') {
-                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Сохранено", animate: false, sync: sync});
+                chrome.runtime.sendMessage(
+                    {
+                        greeting: "setLoading", 
+                        farewell: "✔️ Сохранено", 
+                        animate: false, 
+                        sync: sync
+                    }, 
+                    () => this.messageErrorHandler());
             } else if(request && request == 'sync') {
-                chrome.runtime.sendMessage({greeting: "setLoading", farewell: "✔️ Синхронизировано", animate: false, sync: sync});
+                chrome.runtime.sendMessage(
+                    {
+                        greeting: "setLoading", 
+                        farewell: "✔️ Синхронизировано", 
+                        animate: false, 
+                        sync: sync
+                    }, 
+                    () => this.messageErrorHandler());
             }
         } catch (err) {
             this.logger.log(`Failed to setOnlineFunctions: ${err}`);
@@ -81,51 +95,54 @@ class Online {
         }
     }
 
-    async sendAttendanceMail(link) {
+    async sendAttendanceNotify(link) {
         try {
-            const localStorage = await this.storage.getValue(null);
+            const settings = await this.storage.getValue(null);
         
-            if(localStorage["visitNotify"] != 'true')
+            if(settings["visitNotify"] != true)
                 return;
     
-            if(!localStorage["mail"] || localStorage["mail"] === undefined || !localStorage["session"]) {
-                this.logger.log(`Not enough data to send mail.`);
+            if(settings["telegramNotify"] != true) {
+                this.logger.log(`Telegram notify is not enabled.`);
                 return;
             }
         
-            if(!localStorage["userId"]) {
-                localStorage["userId"] = this.parser.getUserId();
+            if(!settings["userId"]) {
+                settings["userId"] = this.parser.getUserId();
             }
         
-            const url = `${XDLApi}mail/`;
-            const body = new FormData();
-            body.append('e', localStorage["mail"]);
-            body.append('l', link);
-            body.append('s', localStorage["session"]);
-            body.append('u', localStorage["userId"]);
-            body.append('h', this.genHash(localStorage["mail"], link, localStorage["session"], localStorage["userId"]));
+            const url = `${XDLApi}notify/send`;
+            const body = new URLSearchParams();
+        
+            body.append('userId', settings["userId"]);
+            body.append('session', settings["session"]);
+            body.append('sesskey', settings["sesskey"]);
+            body.append('link', link);
     
             const options = {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
                 body: body
             };
             const response = await fetch(url, options);
             if (!response.ok) {
-                throw new Error('Fetch error: Failed to sendAttendanceMail.');
+                throw new Error('Fetch error: Failed to sendAttendanceNotify.');
             }
             const data = await response.text();
         
-            this.logger.log(`Запрос об отправке письма на почту ${localStorage["mail"]} отправлен. Ответ: ${data}`);
+            this.logger.log(`Request to send notify is sent. Response: ${data}`);
         } catch (err) {
-            this.logger.log(`Failed to sendAttendanceMail: ${err}`);
+            this.logger.log(`Failed to sendAttendanceNotify: ${err}`);
         }
     }
 
-    genHash() {
-        let h = "";
-        for(let i = 0; i < arguments.length; i++) {
-            h += arguments[i];
+    messageErrorHandler() {
+        const lastError = chrome.runtime.lastError;
+        if(lastError) {
+            this.logger.log(lastError.message);
+            return;
         }
-        return crypt(h);
     }
 }

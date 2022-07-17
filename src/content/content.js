@@ -1,6 +1,4 @@
 const debug = true;
-const moodleApi = "https://dl.nure.ua/";
-const XDLApi = "https://xdl.leoit.dev/";
 
 export default class Content {
     constructor() {
@@ -16,19 +14,18 @@ export default class Content {
     }
     
     async main() {
-        this.settings = this.getLocalSettings();
-        if(this.settings && (this.settings.darkMode == 'true' || this.settings.darkMode == true)) {
-            //this.setDarkMode(true);
-        }
-    
-        this.log(`>XDL: Local settings:`);
-        this.log(this.settings);
-        
         this.settings = await this.getSettings();
-        this.saveLocalSettings(this.settings);
     
         this.log(`>XDL: Settings loaded from background:`);
         this.log(this.settings);
+
+        if(!this.settings) return;
+
+        if(this.settings.darkMode == true) {
+            this.setDarkMode(true);
+        } else {
+            this.setDarkMode(false);
+        }
     }
 
     async ready() {
@@ -76,34 +73,31 @@ export default class Content {
     
     getSettings() {
         let settings = new Promise (resolve => {
-            chrome.runtime.sendMessage({greeting: "getSettings"}, 
-            resp => resolve(resp.settings));
+            try {
+                chrome.runtime.sendMessage({greeting: "getSettings"}, 
+                resp => {
+                    this.messageErrorHandler();
+                    resolve(resp.settings);
+                });
+            } catch(err) {
+                this.log(`>XDL: Error in getSettings: ${err}`);
+            }
         });
         
         return settings;
     }
     
-    getLocalSettings() {
-        let settings;
-        if(localStorage["XDLSettings"]) {
-            try {
-                settings = JSON.parse(localStorage["XDLSettings"]);
-            } catch(err) {
-                this.log(`>XDL: Ошибка при парсинге настроек: ${err}`);
-                settings = false;
-            }
-        }
-        return settings;
-    }
-    
-    saveLocalSettings(settings) {
-        localStorage["XDLSettings"] = JSON.stringify(settings);
-    }
-    
     saveAuth(auth) {
         let response = new Promise (resolve => {
-            chrome.runtime.sendMessage({greeting: "saveAuth", auth: auth},
-            resp => resolve(resp.farewell));
+            try {
+                chrome.runtime.sendMessage({greeting: "saveAuth", auth: auth},
+                resp => {
+                    this.messageErrorHandler();
+                    resolve(resp.farewell);
+                });
+            } catch (err) {
+                this.log(`>XDL: Error in saveAuth: ${err}`);
+            }
         });
         
         return response;
@@ -111,6 +105,8 @@ export default class Content {
     
     async setDarkMode(on) {
         if(on) {
+            localStorage["XDLDarkMode"] = true;
+
             const style = document.createElement("style");
             style.classList.add("darkMode");
             style.innerHTML = localStorage["XDLDarkCSS"];
@@ -119,6 +115,8 @@ export default class Content {
     
             document.lastElementChild.appendChild(style);
         } else {
+            localStorage["XDLDarkMode"] = false;
+
             const style = document.querySelector(".darkMode");
             if(style != null) {
                 style.remove();
@@ -145,11 +143,17 @@ export default class Content {
                 this.setDarkMode(true);
             } else {
                 this.settings.darkMode = false;
-                localStorage["XDLDarkCSS"] = '';
                 this.setDarkMode(false);
             }
-            this.saveLocalSettings(this.settings);
         }
         sendResponse({farewell: "OK"});
+    }
+
+    messageErrorHandler() {
+        const lastError = chrome.runtime.lastError;
+        if(lastError) {
+            this.logger.log(lastError.message);
+            return;
+        }
     }
 }
