@@ -68,6 +68,7 @@ class Online {
             }
         } catch (err) {
             this.logger.log(`Failed to setOnlineFunctions: ${err}`);
+            chrome.runtime.sendMessage({greeting: "setLoading", farewell: "❌ Ошибка", animate: false}, () => this.messageErrorHandler());
         }
     }
 

@@ -207,6 +207,7 @@ export default class Popup {
     }
 
     setUpdateButton() {
+        if(!this.settings.version) return;
         this.versionText = document.getElementById("header-version");
 
         if(`v${this.settings.version}` != this.versionText.innerHTML) {
